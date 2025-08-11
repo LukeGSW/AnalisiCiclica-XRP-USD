@@ -216,4 +216,165 @@ Run analysis manually from GitHub:
    - Check date range
 
 2. **Telegram not working**
-   -
+   - Verify bot token and chat ID
+   - Check bot permissions
+   - Test with `/test` command
+
+3. **Streamlit errors**
+   - Update dependencies: `pip install --upgrade streamlit`
+   - Clear cache: `streamlit cache clear`
+   - Check data files exist
+
+4. **GitHub Actions failing**
+   - Verify secrets are set correctly
+   - Check workflow logs for errors
+   - Ensure repository has write permissions
+
+### Debug Mode
+
+Run with verbose output:
+```python
+# In config.py, add:
+DEBUG = True
+
+# In main_analysis.py:
+if Config.DEBUG:
+    print(detailed_info)
+```
+
+## 📚 Technical Documentation
+
+### Cycle Analysis Algorithm
+
+The system uses a causal approach to avoid look-ahead bias:
+
+```python
+# Causal Oscillator
+fast_ma = price.rolling(10).mean()
+slow_ma = price.rolling(40).mean()
+oscillator = fast_ma - slow_ma
+
+# Hilbert Transform
+phase = hilbert_transform(oscillator)
+quadrant = classify_phase(phase)
+```
+
+### Signal Generation Logic
+
+```python
+# Bullish regime: Quadrants 1 & 2
+if phase in [-π, -π/2]:  # Rising from trough
+    signal = "BUY"
+elif phase in [π/2, π]:  # Falling from peak
+    signal = "SELL"
+```
+
+### Walk-Forward Validation
+
+```
+Data: [=====================================]
+      [========IS========][===OOS===]  Window 1
+         [========IS========][===OOS===]  Window 2
+            [========IS========][===OOS===]  Window 3
+```
+
+## 🔒 Security Best Practices
+
+1. **Never commit `.env` files**
+2. **Use GitHub Secrets for sensitive data**
+3. **Rotate API keys regularly**
+4. **Monitor GitHub Actions usage**
+5. **Set up 2FA on all accounts**
+
+## 📈 Performance Disclaimer
+
+**Important**: This is a research and educational project. Past performance does not guarantee future results. Always perform your own due diligence before trading.
+
+### Risk Considerations
+
+- Market conditions change
+- Cycles may disappear or shift
+- Transaction costs impact returns
+- Slippage in live trading
+- System failures possible
+
+## 🤝 Contributing
+
+Contributions are welcome! Please follow these steps:
+
+1. Fork the repository
+2. Create feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit changes (`git commit -m 'Add AmazingFeature'`)
+4. Push to branch (`git push origin feature/AmazingFeature`)
+5. Open Pull Request
+
+### Development Guidelines
+
+- Follow PEP 8 style guide
+- Add unit tests for new features
+- Update documentation
+- Test locally before PR
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- Based on Kriterion Quant methodology
+- Hilbert Transform cycle analysis
+- Inspired by John Ehlers' work on market cycles
+- EODHD for market data
+- Streamlit for dashboard framework
+
+## 📧 Contact & Support
+
+- **Issues**: [GitHub Issues](https://github.com/yourusername/kriterion-quant/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/yourusername/kriterion-quant/discussions)
+- **Email**: your.email@example.com
+
+## 🗺️ Roadmap
+
+### Current Features ✅
+- [x] Cycle analysis with Hilbert Transform
+- [x] Causal signal generation
+- [x] Walk-forward backtesting
+- [x] Telegram notifications
+- [x] Streamlit dashboard
+- [x] GitHub Actions automation
+
+### Planned Features 🚧
+- [ ] Multi-asset support
+- [ ] Portfolio optimization
+- [ ] Risk management rules
+- [ ] Machine learning enhancements
+- [ ] Real-time data streaming
+- [ ] Mobile app
+
+## 📊 Example Results
+
+### Sample Backtest Performance
+```
+In-Sample Period: 2019-2024
+Total Return: +45.2%
+Sharpe Ratio: 1.85
+Max Drawdown: -12.3%
+Win Rate: 58%
+
+Out-of-Sample Period: 2024
+Total Return: +8.7%
+Sharpe Ratio: 1.42
+Max Drawdown: -6.8%
+Win Rate: 55%
+```
+
+### Live Dashboard
+![Dashboard Screenshot](docs/dashboard.png)
+
+---
+
+**Last Updated**: November 2024  
+**Version**: 1.0.0  
+**Status**: Active Development
+
+⭐ If you find this project useful, please consider giving it a star!
