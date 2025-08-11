@@ -1,9 +1,10 @@
 """
 Configuration module for Kriterion Quant Trading System
-Central configuration for all system parameters
+Flexible version that prioritizes environment variables
 """
 
 import os
+import json
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 
@@ -13,14 +14,41 @@ load_dotenv()
 class Config:
     """Central configuration class for the trading system"""
     
+    # TICKER CONFIGURATION - Priority order:
+    # 1. Environment variable TICKER
+    # 2. ticker_config.json file
+    # 3. Default value
+    
+    @classmethod
+    def get_ticker(cls):
+        """Get ticker with priority to environment variables"""
+        # First priority: Environment variable
+        env_ticker = os.getenv('TICKER')
+        if env_ticker:
+            return env_ticker.upper()
+        
+        # Second priority: ticker_config.json
+        if os.path.exists('ticker_config.json'):
+            try:
+                with open('ticker_config.json', 'r') as f:
+                    config = json.load(f)
+                    return config.get('ticker', 'SPY').upper()
+            except:
+                pass
+        
+        # Default
+        return 'SPY'  # CHANGE THIS TO YOUR DEFAULT TICKER
+    
+    # Set the ticker
+    TICKER = get_ticker()
+    
     # API Keys and Tokens (from environment variables)
     EODHD_API_KEY = os.getenv('EODHD_API_KEY')
     TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
     TELEGRAM_CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
-    GITHUB_TOKEN = os.getenv('GITHUB_TOKEN')  # Optional - provided automatically by GitHub Actions
+    GITHUB_TOKEN = os.getenv('GITHUB_TOKEN')  # Optional
     
     # Trading Parameters
-    TICKER = os.getenv('TICKER', 'SPY')  # Default ticker with env override
     EXCHANGE = 'US'  # Default exchange
     
     # Analysis Parameters (matching the notebook)
@@ -58,9 +86,9 @@ class Config:
         "Quadrante 4 (Discesa -> Minimo)"
     ]
     
-    # Notification Settings - Check if we should send notifications
+    # Notification Settings
     SEND_TELEGRAM_NOTIFICATIONS = bool(TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID)
-    SAVE_TO_GITHUB = bool(GITHUB_TOKEN)  # Only if explicitly available
+    SAVE_TO_GITHUB = bool(GITHUB_TOKEN)
     
     @classmethod
     def validate(cls):
@@ -77,18 +105,15 @@ class Config:
         elif cls.TELEGRAM_CHAT_ID and not cls.TELEGRAM_BOT_TOKEN:
             errors.append("TELEGRAM_BOT_TOKEN is missing (CHAT_ID is set)")
         
-        # GITHUB_TOKEN is completely optional - no validation needed
-        # It's automatically provided by GitHub Actions when needed
-        
         if errors:
             raise ValueError(f"Configuration errors: {', '.join(errors)}")
         
         # Print configuration status
         print("✅ Configuration validated successfully")
+        print(f"  - Ticker: {cls.TICKER}")  # Show which ticker is being used
         print(f"  - EODHD API: Configured")
         print(f"  - Telegram: {'Configured' if cls.SEND_TELEGRAM_NOTIFICATIONS else 'Not configured (optional)'}")
         print(f"  - GitHub: {'Available' if cls.SAVE_TO_GITHUB else 'Not needed'}")
-        print(f"  - Ticker: {cls.TICKER}")
         
         return True
     
@@ -96,3 +121,12 @@ class Config:
     def get_phase_labels(cls):
         """Get phase quadrant labels for cycle analysis"""
         return cls.BULLISH_QUADRANTS + cls.BEARISH_QUADRANTS
+    
+    @classmethod
+    def set_ticker(cls, new_ticker):
+        """Dynamically change the ticker"""
+        cls.TICKER = new_ticker.upper()
+        # Save to config file
+        with open('ticker_config.json', 'w') as f:
+            json.dump({'ticker': cls.TICKER}, f)
+        print(f"✅ Ticker changed to: {cls.TICKER}")
