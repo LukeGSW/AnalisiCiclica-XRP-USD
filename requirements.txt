@@ -17,7 +17,7 @@ streamlit==1.29.0
 
 # Backtesting - specific version for stability
 vectorbt==0.26.2
-numba==0.58.1  # Required by vectorbt
+# numba==0.58.1  # Required by vectorbt
 
 # Telegram notifications
 python-telegram-bot==20.7
