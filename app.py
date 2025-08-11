@@ -402,7 +402,7 @@ def main():
         st.header("⚙️ Configuration")
         
         # Display current configuration
-        current_lookback = data.get('summary', {}).get('lookback_years', 5)
+        current_lookback = data.get('summary', {}).get('lookback_years', 10)
         date_range = data.get('summary', {}).get('date_range', {})
         
         st.info(f"""
@@ -423,7 +423,7 @@ def main():
         new_lookback = st.slider(
             "Lookback period (years)",
             min_value=1,
-            max_value=10,
+            max_value=20,
             value=current_lookback,
             step=1,
             help="Number of years of historical data to analyze"
