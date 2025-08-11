@@ -1,7 +1,6 @@
 """
 Streamlit Dashboard for Kriterion Quant Trading System
-Interactive visualization of cycle analysis and trading signals
-Fixed version with correct numeric types
+Version with simple ticker selection
 """
 
 import streamlit as st
@@ -13,7 +12,6 @@ import json
 import os
 from datetime import datetime, timedelta
 import sys
-import subprocess
 
 # Add src directory to path
 sys.path.insert(0, 'src')
@@ -26,7 +24,7 @@ from backtester import Backtester
 
 # Page configuration
 st.set_page_config(
-    page_title=f"Kriterion Quant - {Config.TICKER}",
+    page_title="Kriterion Quant Trading",
     page_icon="📊",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -45,7 +43,6 @@ st.markdown("""
         margin-bottom: 10px;
     }
     
-    /* Metric value styling */
     [data-testid="metric-container"] > div:nth-child(1) {
         color: #666666 !important;
         font-size: 14px !important;
@@ -63,14 +60,6 @@ st.markdown("""
         font-size: 12px !important;
     }
     
-    /* Info boxes styling */
-    .stAlert > div {
-        background-color: #ffffff !important;
-        color: #1f1f1f !important;
-        border: 1px solid #4a90e2 !important;
-    }
-    
-    /* Button styling */
     .stButton > button {
         background-color: #4a90e2;
         color: white;
@@ -78,44 +67,34 @@ st.markdown("""
         padding: 10px 24px;
         border-radius: 5px;
         font-weight: 600;
-        transition: all 0.3s;
     }
     
     .stButton > button:hover {
         background-color: #357abd;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-    }
-    
-    /* Primary button */
-    .stButton > button[kind="primary"] {
-        background-color: #28a745;
-    }
-    
-    .stButton > button[kind="primary"]:hover {
-        background-color: #218838;
-    }
-    
-    /* Headers */
-    h1, h2, h3 {
-        color: #1f1f1f !important;
     }
 </style>
 """, unsafe_allow_html=True)
 
-def run_analysis():
-    """Run the complete analysis pipeline"""
+# Popular tickers for quick selection
+POPULAR_TICKERS = ['GLD', 'SPY', 'QQQ', 'IWM', 'SLV', 'TLT', 'XLE', 'XLF', 'AAPL', 'MSFT']
+
+def run_analysis_for_ticker(ticker_symbol):
+    """Run analysis for a specific ticker"""
     try:
-        with st.spinner('🔄 Running analysis... This may take 1-2 minutes'):
-            # Progress bar
+        with st.spinner(f'🔄 Analyzing {ticker_symbol}... This may take 1-2 minutes'):
             progress_bar = st.progress(0)
             status_text = st.empty()
             
+            # Update Config
+            original_ticker = Config.TICKER
+            Config.TICKER = ticker_symbol
+            
             # Step 1: Fetch data
-            status_text.text('📡 Fetching market data...')
+            status_text.text(f'📡 Fetching data for {ticker_symbol}...')
             progress_bar.progress(20)
             
             fetcher = DataFetcher()
-            df = fetcher.update_latest_data(Config.TICKER)
+            df = fetcher.update_latest_data(ticker_symbol)
             
             # Step 2: Cycle analysis
             status_text.text('🔄 Performing cycle analysis...')
@@ -130,7 +109,16 @@ def run_analysis():
             
             generator = SignalGenerator()
             df_signals = generator.generate_signals(df_analyzed)
-            generator.save_signals(df_signals)
+            
+            # Save with ticker-specific name
+            signals_file = f'data/{ticker_symbol}_signals.csv'
+            df_signals.to_csv(signals_file)
+            
+            # Save latest signal
+            latest_signal = generator.get_latest_signal(df_signals)
+            latest_file = f'data/{ticker_symbol}_latest.json'
+            with open(latest_file, 'w') as f:
+                json.dump(latest_signal, f, indent=2, default=str)
             
             # Step 4: Run backtest
             status_text.text('📊 Running backtest...')
@@ -138,59 +126,58 @@ def run_analysis():
             
             backtester = Backtester()
             wf_results = backtester.run_walk_forward_analysis(df_signals)
-            backtester.save_backtest_results(wf_results)
             
-            # Step 5: Complete
-            status_text.text('✅ Analysis complete!')
+            # Save backtest
+            backtest_file = f'data/{ticker_symbol}_backtest.json'
+            backtester.save_backtest_results(wf_results, backtest_file)
+            
+            # Complete
+            status_text.text(f'✅ Analysis complete for {ticker_symbol}!')
             progress_bar.progress(100)
             
-            # Save summary
-            latest_signal = generator.get_latest_signal(df_signals)
-            summary = {
-                'timestamp': datetime.now().isoformat(),
-                'ticker': Config.TICKER,
-                'data_points': len(df_signals),
-                'latest_signal': latest_signal
-            }
+            # Restore original ticker
+            Config.TICKER = original_ticker
             
-            summary_file = os.path.join(Config.DATA_DIR, 'analysis_summary.json')
-            with open(summary_file, 'w') as f:
-                json.dump(summary, f, indent=2, default=str)
-            
-            return True, "Analysis completed successfully!"
+            return True, f"Analysis completed for {ticker_symbol}"
             
     except Exception as e:
+        Config.TICKER = original_ticker
         return False, f"Error: {str(e)}"
 
-def load_data():
-    """Load all necessary data files"""
+def load_ticker_data(ticker_symbol):
+    """Load data for a specific ticker"""
     data = {}
     
-    # Load signals data
-    signals_file = Config.SIGNALS_FILE
+    # Try ticker-specific files first
+    signals_file = f'data/{ticker_symbol}_signals.csv'
+    if not os.path.exists(signals_file):
+        # Fall back to default
+        signals_file = Config.SIGNALS_FILE
+    
     if os.path.exists(signals_file):
         data['signals'] = pd.read_csv(signals_file, index_col='date', parse_dates=True)
-    else:
-        return None
+        
+        # Load latest signal
+        latest_file = f'data/{ticker_symbol}_latest.json'
+        if not os.path.exists(latest_file):
+            latest_file = signals_file.replace('.csv', '_latest.json')
+        
+        if os.path.exists(latest_file):
+            with open(latest_file, 'r') as f:
+                data['latest_signal'] = json.load(f)
+        
+        # Load backtest
+        backtest_file = f'data/{ticker_symbol}_backtest.json'
+        if not os.path.exists(backtest_file):
+            backtest_file = Config.BACKTEST_RESULTS_FILE
+        
+        if os.path.exists(backtest_file):
+            with open(backtest_file, 'r') as f:
+                data['backtest'] = json.load(f)
+        
+        return data
     
-    # Load latest signal
-    latest_signal_file = signals_file.replace('.csv', '_latest.json')
-    if os.path.exists(latest_signal_file):
-        with open(latest_signal_file, 'r') as f:
-            data['latest_signal'] = json.load(f)
-    
-    # Load backtest results
-    if os.path.exists(Config.BACKTEST_RESULTS_FILE):
-        with open(Config.BACKTEST_RESULTS_FILE, 'r') as f:
-            data['backtest'] = json.load(f)
-    
-    # Load analysis summary
-    summary_file = os.path.join(Config.DATA_DIR, 'analysis_summary.json')
-    if os.path.exists(summary_file):
-        with open(summary_file, 'r') as f:
-            data['summary'] = json.load(f)
-    
-    return data
+    return None
 
 def create_price_chart(df):
     """Create interactive price chart with signals"""
@@ -222,11 +209,7 @@ def create_price_chart(df):
                 y=buy_signals['close'],
                 mode='markers',
                 name='Buy Signal',
-                marker=dict(
-                    symbol='triangle-up',
-                    size=12,
-                    color='green'
-                )
+                marker=dict(symbol='triangle-up', size=12, color='green')
             ),
             row=1, col=1
         )
@@ -240,11 +223,7 @@ def create_price_chart(df):
                 y=sell_signals['close'],
                 mode='markers',
                 name='Sell Signal',
-                marker=dict(
-                    symbol='triangle-down',
-                    size=12,
-                    color='red'
-                )
+                marker=dict(symbol='triangle-down', size=12, color='red')
             ),
             row=1, col=1
         )
@@ -260,8 +239,6 @@ def create_price_chart(df):
             ),
             row=2, col=1
         )
-        
-        # Add zero line
         fig.add_hline(y=0, row=2, col=1, line_dash="dash", line_color="gray")
     
     # Phase
@@ -275,13 +252,10 @@ def create_price_chart(df):
             ),
             row=3, col=1
         )
-        
-        # Add phase quadrant lines
         fig.add_hline(y=np.pi/2, row=3, col=1, line_dash="dash", line_color="gray", opacity=0.5)
         fig.add_hline(y=0, row=3, col=1, line_dash="dash", line_color="gray", opacity=0.5)
         fig.add_hline(y=-np.pi/2, row=3, col=1, line_dash="dash", line_color="gray", opacity=0.5)
     
-    # Update layout
     fig.update_layout(
         height=800,
         showlegend=True,
@@ -298,22 +272,18 @@ def create_price_chart(df):
 
 def create_equity_chart(df):
     """Create equity curve chart"""
-    # Calculate cumulative returns
     df = df.copy()
     df['returns'] = df['close'].pct_change()
     df['strategy_returns'] = df['position'].shift(1) * df['returns']
     df['cumulative_strategy'] = (1 + df['strategy_returns']).cumprod()
     df['cumulative_buy_hold'] = (1 + df['returns']).cumprod()
     
-    # Normalize to starting capital
-    initial_capital = float(Config.INITIAL_CAPITAL)  # Ensure it's float
+    initial_capital = float(Config.INITIAL_CAPITAL)
     df['equity'] = df['cumulative_strategy'] * initial_capital
     df['buy_hold_equity'] = df['cumulative_buy_hold'] * initial_capital
     
-    # Create figure
     fig = go.Figure()
     
-    # Strategy equity
     fig.add_trace(
         go.Scatter(
             x=df.index,
@@ -323,7 +293,6 @@ def create_equity_chart(df):
         )
     )
     
-    # Buy & Hold equity
     fig.add_trace(
         go.Scatter(
             x=df.index,
@@ -348,119 +317,119 @@ def main():
     """Main dashboard function"""
     
     # Header
-    st.title(f"🎯 Kriterion Quant Trading System")
-    st.markdown(f"### Cycle-Based Trading Strategy for {Config.TICKER}")
+    st.title("🎯 Kriterion Quant Trading System")
     
-    # Load data
-    data = load_data()
+    # Initialize session state for ticker
+    if 'selected_ticker' not in st.session_state:
+        st.session_state.selected_ticker = Config.TICKER
     
-    if data is None:
-        st.warning("⚠️ No analysis data found. Please run the analysis first.")
-        
-        st.markdown("---")
-        
-        # Big centered container for the run button
-        col1, col2, col3 = st.columns([1, 2, 1])
-        
-        with col2:
-            st.markdown("### 🚀 Initial Setup")
-            st.info("""
-            This appears to be your first time using the dashboard. 
-            Click the button below to run the initial analysis and generate trading signals.
-            
-            This process will:
-            1. Fetch historical market data
-            2. Perform cycle analysis
-            3. Generate trading signals
-            4. Run backtesting
-            5. Create all necessary data files
-            """)
-            
-            # Check API key
-            if not Config.EODHD_API_KEY:
-                st.error("❌ EODHD API Key not configured!")
-                st.markdown("""
-                Please configure your API key:
-                1. Get an API key from [EODHD](https://eodhistoricaldata.com/)
-                2. Add it to Streamlit Secrets (Settings → Secrets)
-                3. Format: `EODHD_API_KEY = "your_key_here"`
-                """)
-                return
-            
-            # Run analysis button
-            if st.button("🎯 Run Initial Analysis", use_container_width=True, type="primary"):
-                success, message = run_analysis()
-                
-                if success:
-                    st.success(f"✅ {message}")
-                    st.balloons()
-                    st.markdown("### 🎉 Analysis Complete!")
-                    st.markdown("Click the button below to view the results.")
-                    if st.button("📊 View Dashboard", use_container_width=True):
-                        st.rerun()
-                else:
-                    st.error(f"❌ {message}")
-                    st.markdown("""
-                    **Troubleshooting tips:**
-                    - Check your API key is valid
-                    - Ensure you have internet connection
-                    - Check the error message above
-                    """)
-        
-        return
+    # Ticker selection in header
+    col1, col2, col3 = st.columns([2, 1, 1])
     
-    # Regular dashboard view (when data exists)
+    with col1:
+        st.markdown(f"### Cycle-Based Trading Strategy")
+    
+    with col2:
+        # Ticker selection dropdown
+        selected_ticker = st.selectbox(
+            "Select Ticker",
+            options=POPULAR_TICKERS,
+            index=POPULAR_TICKERS.index(st.session_state.selected_ticker) 
+            if st.session_state.selected_ticker in POPULAR_TICKERS else 0,
+            key="ticker_selector"
+        )
+        st.session_state.selected_ticker = selected_ticker
+    
+    with col3:
+        # Custom ticker input
+        custom_ticker = st.text_input("Or enter custom", placeholder="e.g., NVDA")
+        if custom_ticker:
+            st.session_state.selected_ticker = custom_ticker.upper()
+            selected_ticker = custom_ticker.upper()
+    
+    # Load data for selected ticker
+    data = load_ticker_data(selected_ticker)
+    
     # Sidebar
     with st.sidebar:
         st.header("⚙️ Configuration")
+        
+        # Show current ticker info
         st.info(f"""
-        **Ticker:** {Config.TICKER}  
+        **Ticker:** {selected_ticker}  
         **Fast MA:** {Config.FAST_MA_WINDOW}  
         **Slow MA:** {Config.SLOW_MA_WINDOW}  
         **Initial Capital:** ${float(Config.INITIAL_CAPITAL):,.0f}  
         **Trading Fees:** {float(Config.TRADING_FEES)*100:.1f}%
         """)
         
-        # Update analysis button
+        # Analysis button for selected ticker
         st.markdown("---")
-        st.markdown("### 🔄 Update Analysis")
-        if st.button("Run New Analysis", use_container_width=True):
-            success, message = run_analysis()
+        st.markdown(f"### 🔄 Analysis for {selected_ticker}")
+        
+        if st.button(f"Run Analysis for {selected_ticker}", use_container_width=True, type="primary"):
+            success, message = run_analysis_for_ticker(selected_ticker)
             if success:
                 st.success(message)
                 st.rerun()
             else:
                 st.error(message)
         
-        # Date range filter
+        # Quick analysis for multiple tickers
         st.markdown("---")
-        st.header("📅 Date Range")
-        df_signals = data['signals']
+        st.markdown("### 🔍 Quick Analysis")
         
-        date_range = st.date_input(
-            "Select date range",
-            value=(df_signals.index[0], df_signals.index[-1]),
-            min_value=df_signals.index[0],
-            max_value=df_signals.index[-1]
+        multi_tickers = st.multiselect(
+            "Select multiple tickers",
+            options=['SPY', 'QQQ', 'IWM', 'SLV', 'TLT', 'XLE', 'XLF'],
+            default=[]
         )
         
-        # Filter data
-        if len(date_range) == 2:
-            mask = (df_signals.index >= pd.Timestamp(date_range[0])) & (df_signals.index <= pd.Timestamp(date_range[1]))
-            df_filtered = df_signals.loc[mask]
+        if st.button("Analyze Selected", use_container_width=True):
+            for ticker in multi_tickers:
+                with st.spinner(f'Analyzing {ticker}...'):
+                    success, msg = run_analysis_for_ticker(ticker)
+                    if success:
+                        st.success(f"✅ {ticker}")
+                    else:
+                        st.error(f"❌ {ticker}: {msg}")
+        
+        # Date range filter (if data exists)
+        if data and 'signals' in data:
+            st.markdown("---")
+            st.header("📅 Date Range")
+            df_signals = data['signals']
+            
+            date_range = st.date_input(
+                "Select date range",
+                value=(df_signals.index[0], df_signals.index[-1]),
+                min_value=df_signals.index[0],
+                max_value=df_signals.index[-1]
+            )
+            
+            if len(date_range) == 2:
+                mask = (df_signals.index >= pd.Timestamp(date_range[0])) & (df_signals.index <= pd.Timestamp(date_range[1]))
+                df_filtered = df_signals.loc[mask]
+            else:
+                df_filtered = df_signals
         else:
-            df_filtered = df_signals
+            df_filtered = None
     
-    # Main content area
+    # Main content
+    if data is None:
+        st.warning(f"⚠️ No data found for {selected_ticker}.")
+        st.info(f"Click 'Run Analysis for {selected_ticker}' in the sidebar to generate data.")
+        return
+    
+    # Tabs
     tab1, tab2, tab3, tab4 = st.tabs(["📊 Current Status", "📈 Analysis", "🎯 Backtest", "📋 History"])
     
     with tab1:
-        st.header("Current Trading Status")
+        st.header(f"Current Trading Status - {selected_ticker}")
         
         if 'latest_signal' in data:
             latest = data['latest_signal']
             
-            # Display metrics in columns
             col1, col2, col3, col4 = st.columns(4)
             
             with col1:
@@ -493,7 +462,6 @@ def main():
                     latest['phase_quadrant']
                 )
             
-            # Signal details
             st.subheader("📍 Signal Details")
             details_col1, details_col2 = st.columns(2)
             
@@ -501,11 +469,10 @@ def main():
                 st.info(f"""
                 **Oscillator Value:** {float(latest['oscillator_value']):.4f}  
                 **Phase Quadrant:** {latest['phase_quadrant']}  
-                **Generated:** {latest['timestamp']}
+                **Generated:** {latest.get('timestamp', 'N/A')}
                 """)
             
             with details_col2:
-                # Recommendation based on signal
                 if latest['signal'] == 'BUY':
                     st.success("🎯 **Action:** Enter Long Position")
                 elif latest['signal'] == 'SELL':
@@ -514,125 +481,59 @@ def main():
                     st.info("🎯 **Action:** Maintain Current Position")
     
     with tab2:
-        st.header("Cycle Analysis")
+        st.header(f"Cycle Analysis - {selected_ticker}")
         
-        # Interactive price chart
-        st.subheader("📈 Price Chart with Signals")
-        fig_price = create_price_chart(df_filtered)
-        st.plotly_chart(fig_price, use_container_width=True)
-        
-        # Phase distribution
-        if 'phase_quadrant' in df_filtered.columns:
-            st.subheader("🔄 Cycle Phase Distribution")
-            
-            col1, col2 = st.columns(2)
-            
-            with col1:
-                # Phase distribution pie chart
-                phase_counts = df_filtered['phase_quadrant'].value_counts()
-                fig_pie = go.Figure(data=[
-                    go.Pie(
-                        labels=phase_counts.index.tolist(),
-                        values=phase_counts.values.tolist(),
-                        hole=0.3
-                    )
-                ])
-                fig_pie.update_layout(
-                    title="Time Spent in Each Phase",
-                    height=300
-                )
-                st.plotly_chart(fig_pie, use_container_width=True)
-            
-            with col2:
-                # Performance by phase
-                if 'summary' in data and 'cycle_analysis' in data['summary']:
-                    cycle_info = data['summary']['cycle_analysis']
-                    st.metric(
-                        "Dominant Cycle Period",
-                        f"{float(cycle_info.get('dominant_period', 0)):.1f} days"
-                    )
-                    st.metric(
-                        "Statistical Significance",
-                        f"p-value: {float(cycle_info.get('p_value', 1)):.4f}",
-                        "✅ Significant" if cycle_info.get('significant', False) else "⚠️ Not Significant"
-                    )
+        if df_filtered is not None:
+            st.subheader("📈 Price Chart with Signals")
+            fig_price = create_price_chart(df_filtered)
+            st.plotly_chart(fig_price, use_container_width=True)
     
     with tab3:
-        st.header("Backtest Results")
+        st.header(f"Backtest Results - {selected_ticker}")
         
-        # Equity curve
-        st.subheader("💰 Equity Curve")
-        fig_equity = create_equity_chart(df_filtered)
-        st.plotly_chart(fig_equity, use_container_width=True)
+        if df_filtered is not None:
+            st.subheader("💰 Equity Curve")
+            fig_equity = create_equity_chart(df_filtered)
+            st.plotly_chart(fig_equity, use_container_width=True)
         
-        # Performance metrics
         if 'backtest' in data:
             st.subheader("📊 Performance Metrics")
             
             col1, col2 = st.columns(2)
             
-            # Check if we have IS/OOS results
-            if 'in_sample_metrics' in data['backtest']:
-                with col1:
-                    st.markdown("**In-Sample Performance**")
-                    is_metrics = data['backtest']['in_sample_metrics']
-                    for key, value in is_metrics.items():
-                        if isinstance(value, (int, float)):
-                            st.metric(key.replace('_', ' ').title(), f"{float(value):.2f}")
-                
-                with col2:
-                    st.markdown("**Out-of-Sample Performance**")
-                    oos_metrics = data['backtest']['out_of_sample_metrics']
-                    for key, value in oos_metrics.items():
-                        if isinstance(value, (int, float)):
-                            st.metric(key.replace('_', ' ').title(), f"{float(value):.2f}")
+            if 'out_of_sample_metrics' in data['backtest']:
+                metrics = data['backtest']['out_of_sample_metrics']
+            elif 'metrics' in data['backtest']:
+                metrics = data['backtest']['metrics']
             else:
-                # Single backtest results
-                metrics = data['backtest'].get('metrics', {})
-                
-                with col1:
-                    st.metric("Total Return", f"{float(metrics.get('total_return_%', 0)):.2f}%")
-                    st.metric("Max Drawdown", f"{float(metrics.get('max_drawdown_%', 0)):.2f}%")
-                    st.metric("Sharpe Ratio", f"{float(metrics.get('sharpe_ratio', 0)):.2f}")
-                    st.metric("Calmar Ratio", f"{float(metrics.get('calmar_ratio', 0)):.2f}")
-                
-                with col2:
-                    st.metric("Total Trades", f"{int(metrics.get('total_trades', 0)):.0f}")
-                    st.metric("Win Rate", f"{float(metrics.get('win_rate_%', 0)):.1f}%")
-                    st.metric("Profit Factor", f"{float(metrics.get('profit_factor', 0)):.2f}")
-                    st.metric("Sortino Ratio", f"{float(metrics.get('sortino_ratio', 0)):.2f}")
+                metrics = {}
+            
+            with col1:
+                st.metric("Total Return", f"{float(metrics.get('total_return_%', 0)):.2f}%")
+                st.metric("Max Drawdown", f"{float(metrics.get('max_drawdown_%', 0)):.2f}%")
+                st.metric("Sharpe Ratio", f"{float(metrics.get('sharpe_ratio', 0)):.2f}")
+            
+            with col2:
+                st.metric("Win Rate", f"{float(metrics.get('win_rate_%', 0)):.1f}%")
+                st.metric("Total Trades", f"{int(metrics.get('total_trades', 0))}")
+                st.metric("Profit Factor", f"{float(metrics.get('profit_factor', 0)):.2f}")
     
     with tab4:
-        st.header("Trading History")
+        st.header(f"Trading History - {selected_ticker}")
         
-        # Recent signals
-        st.subheader("📝 Recent Signals")
-        recent_signals = df_filtered[df_filtered['signal'] != 'HOLD'].tail(20)
-        
-        if not recent_signals.empty:
-            display_df = recent_signals[['close', 'signal', 'phase_quadrant', 'signal_strength', 'confidence']].copy()
-            display_df.index = display_df.index.date
-            st.dataframe(display_df, use_container_width=True)
-        else:
-            st.info("No recent signals in the selected date range")
-        
-        # Download data
-        st.subheader("💾 Download Data")
-        
-        csv = df_filtered.to_csv()
-        st.download_button(
-            label="Download Signals Data (CSV)",
-            data=csv,
-            file_name=f"kriterion_signals_{Config.TICKER}_{datetime.now().strftime('%Y%m%d')}.csv",
-            mime="text/csv"
-        )
+        if df_filtered is not None:
+            recent_signals = df_filtered[df_filtered['signal'] != 'HOLD'].tail(20)
+            
+            if not recent_signals.empty:
+                st.dataframe(recent_signals[['close', 'signal', 'phase_quadrant']], use_container_width=True)
+            else:
+                st.info("No signals in the selected date range")
     
     # Footer
     st.markdown("---")
-    st.caption(f"Last updated: {data.get('summary', {}).get('timestamp', 'Unknown')}")
+    st.caption(f"Last updated: {data.get('latest_signal', {}).get('timestamp', 'Unknown')}")
     st.caption("Kriterion Quant Trading System - Cycle-Based Strategy")
 
 if __name__ == "__main__":
-    # Create data directory if it doesn't exist
     os.makedirs('data', exist_ok=True)
     main()
