@@ -1,15 +1,71 @@
+name: Multi-Ticker Analysis
+
 on:
   schedule:
-    # ETF Analysis - 4:30 PM
+    # Run every weekday at 4:30 PM EST (21:30 UTC)
     - cron: '30 21 * * 1-5'
-    
+  
   workflow_dispatch:
     inputs:
-      ticker_group:
-        type: choice
-        description: 'Ticker Group'
-        options:
-        - 'ETFs: SPY,QQQ,IWM,DIA'
-        - 'Commodities: GLD,SLV,USO,UNG'
-        - 'Sectors: XLE,XLF,XLK,XLV'
-        - 'Custom'
+      tickers:
+        description: 'Tickers to analyze (comma-separated, e.g., SPY,QQQ,GLD)'
+        required: false
+        default: 'GLD,SPY,QQQ'
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        ticker: ${{ fromJson(env.TICKER_ARRAY) }}
+      max-parallel: 3  # Process 3 tickers at a time to avoid API limits
+    
+    steps:
+    - name: Prepare ticker list
+      run: |
+        # Convert comma-separated list to JSON array
+        if [ "${{ github.event.inputs.tickers }}" != "" ]; then
+          TICKERS="${{ github.event.inputs.tickers }}"
+        else
+          TICKERS="GLD,SPY,QQQ"  # Default tickers
+        fi
+        echo "TICKER_ARRAY=[\"$(echo $TICKERS | sed 's/,/\",\"/g')\"]" >> $GITHUB_ENV
+    
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+    
+    - name: Cache dependencies
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    
+    - name: Create data directory
+      run: mkdir -p data
+    
+    - name: Run analysis for ${{ matrix.ticker }}
+      env:
+        EODHD_API_KEY: ${{ secrets.EODHD_API_KEY }}
+        TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+        TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        TICKER: ${{ matrix.ticker }}
+      run: |
+        echo "Analyzing ${{ matrix.ticker }}..."
+        python multi_ticker_runner.py --ticker ${{ matrix.ticker }}
+    
+    - name: Commit results
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add data/
+        git diff --quiet && git diff --staged --quiet || (git commit -m "Update ${{ matrix.ticker }} analysis - $(date +'%Y-%m-%d %H:%M')" && git push)
