@@ -20,7 +20,7 @@ class Config:
     GITHUB_TOKEN = os.getenv('GITHUB_TOKEN')  # Optional - provided automatically by GitHub Actions
     
     # Trading Parameters
-    TICKER = os.getenv('TICKER', 'SPY')  # Default ticker with env override
+    TICKER = os.getenv('TICKER', 'PG')  # Default ticker with env override
     EXCHANGE = 'US'  # Default exchange
     
     # Analysis Parameters (matching the notebook)
