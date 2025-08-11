@@ -19,7 +19,7 @@ def get_ticker():
         return env_ticker.upper()
     
     # Default - CHANGE THIS TO YOUR DESIRED TICKER
-    return 'SPY'  # ← CAMBIA QUESTO CON IL TUO TICKER
+    return 'PG'  # ← CAMBIA QUESTO CON IL TUO TICKER
 
 class Config:
     """Central configuration class for the trading system"""
