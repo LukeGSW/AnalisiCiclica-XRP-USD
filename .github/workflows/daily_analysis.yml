@@ -76,3 +76,19 @@ jobs:
       run: |
         echo "Dashboard will auto-update on Streamlit Cloud"
         echo "Visit: https://kriterion-quant.streamlit.app"
+         - name: Run analysis and commit results
+        run: |
+          # Il tuo comando per eseguire lo script Python
+          python main_script.py
+          
+          # Configurazione di Git e push
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add -A
+          # Controlla se ci sono modifiche prima di fare il commit
+          if ! git diff-index --quiet HEAD; then
+            git commit -m "Update analysis results - $(date -u +'%Y-%m-%d %H:%M')"
+            git push
+          else
+            echo "No changes to commit."
+          fi
