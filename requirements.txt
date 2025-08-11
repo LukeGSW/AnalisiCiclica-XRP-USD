@@ -1,27 +1,31 @@
-# Core scientific computing
-pandas==2.0.3
-numpy~=1.23.5         # <<< MODIFICATO: Versione compatibile con numba < 0.57
-scipy==1.11.4
+# Core dependencies - Compatible versions
+pandas>=2.1.0
+numpy>=1.24.0
+scipy>=1.10.0
 
-# Data fetching & environment
-requests==2.31.0
-python-dotenv==1.0.0
+# Data fetching
+requests>=2.31.0
+python-dotenv>=1.0.0
 
-# Technical analysis & stats
-PyWavelets==1.4.1
-statsmodels==0.14.0
+# Technical analysis
+PyWavelets>=1.4.1
+statsmodels>=0.14.0
 
-# Visualization & UI
-plotly==5.18.0
-streamlit==1.29.0
+# Visualization
+plotly>=5.18.0
+streamlit>=1.29.0
 
-# Backtesting
-# vectorbt installa automaticamente la versione corretta di numba (<0.57)
-vectorbt==0.26.2
+# Backtesting - removing vectorbt temporarily for compatibility
+# vectorbt==0.26.2
+# numba==0.58.1
 
-# Notifications
-python-telegram-bot==20.7
+# Simple backtesting alternative (if vectorbt fails)
+yfinance>=0.2.28
+ta>=0.10.2
 
-# Utilities
-jinja2==3.1.2
-python-dateutil==2.8.2
+# Telegram notifications - optional
+# python-telegram-bot>=20.7
+
+# Additional utilities
+jinja2>=3.1.2
+python-dateutil>=2.8.2
