@@ -17,10 +17,10 @@ class Config:
     EODHD_API_KEY = os.getenv('EODHD_API_KEY')
     TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
     TELEGRAM_CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
-    GITHUB_TOKEN = os.getenv('GITHUB_TOKEN')
+    GITHUB_TOKEN = os.getenv('GITHUB_TOKEN')  # Optional - provided automatically by GitHub Actions
     
     # Trading Parameters
-    TICKER = 'GLD'  # Default ticker
+    TICKER = os.getenv('TICKER', 'GLD')  # Default ticker with env override
     EXCHANGE = 'US'  # Default exchange
     
     # Analysis Parameters (matching the notebook)
@@ -33,8 +33,8 @@ class Config:
     MONTE_CARLO_SIMULATIONS = 500  # Number of Monte Carlo simulations
     
     # Backtest Parameters
-    INITIAL_CAPITAL = 10000.0
-    TRADING_FEES = 0.001  # 0.1% per trade
+    INITIAL_CAPITAL = float(os.getenv('INITIAL_CAPITAL', 10000.0))
+    TRADING_FEES = float(os.getenv('TRADING_FEES', 0.001))  # 0.1% per trade
     IN_SAMPLE_RATIO = 0.7  # 70% for in-sample, 30% for out-of-sample
     
     # Data Parameters
@@ -58,29 +58,37 @@ class Config:
         "Quadrante 4 (Discesa -> Minimo)"
     ]
     
-    # Notification Settings
-    SEND_TELEGRAM_NOTIFICATIONS = True
-    SAVE_TO_GITHUB = True
+    # Notification Settings - Check if we should send notifications
+    SEND_TELEGRAM_NOTIFICATIONS = bool(TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID)
+    SAVE_TO_GITHUB = bool(GITHUB_TOKEN)  # Only if explicitly available
     
     @classmethod
     def validate(cls):
         """Validate that all required configuration is present"""
         errors = []
         
+        # EODHD API Key is always required
         if not cls.EODHD_API_KEY:
             errors.append("EODHD_API_KEY is missing")
         
-        if cls.SEND_TELEGRAM_NOTIFICATIONS:
-            if not cls.TELEGRAM_BOT_TOKEN:
-                errors.append("TELEGRAM_BOT_TOKEN is missing")
-            if not cls.TELEGRAM_CHAT_ID:
-                errors.append("TELEGRAM_CHAT_ID is missing")
+        # Telegram is optional - only validate if tokens are partially configured
+        if cls.TELEGRAM_BOT_TOKEN and not cls.TELEGRAM_CHAT_ID:
+            errors.append("TELEGRAM_CHAT_ID is missing (BOT_TOKEN is set)")
+        elif cls.TELEGRAM_CHAT_ID and not cls.TELEGRAM_BOT_TOKEN:
+            errors.append("TELEGRAM_BOT_TOKEN is missing (CHAT_ID is set)")
         
-        if cls.SAVE_TO_GITHUB and not cls.GITHUB_TOKEN:
-            errors.append("GITHUB_TOKEN is missing")
+        # GITHUB_TOKEN is completely optional - no validation needed
+        # It's automatically provided by GitHub Actions when needed
         
         if errors:
             raise ValueError(f"Configuration errors: {', '.join(errors)}")
+        
+        # Print configuration status
+        print("✅ Configuration validated successfully")
+        print(f"  - EODHD API: Configured")
+        print(f"  - Telegram: {'Configured' if cls.SEND_TELEGRAM_NOTIFICATIONS else 'Not configured (optional)'}")
+        print(f"  - GitHub: {'Available' if cls.SAVE_TO_GITHUB else 'Not needed'}")
+        print(f"  - Ticker: {cls.TICKER}")
         
         return True
     
