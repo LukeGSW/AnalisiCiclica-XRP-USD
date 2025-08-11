@@ -52,7 +52,7 @@ jobs:
         EODHD_API_KEY: ${{ secrets.EODHD_API_KEY }}
         TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
         TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        TICKER: ${{ github.event.inputs.ticker || 'GLD' }}
+        TICKER: ${{ github.event.inputs.ticker || 'SPY' }}
       run: |
         python main_analysis.py
     
