@@ -12,11 +12,16 @@ import json
 import os
 from datetime import datetime, timedelta
 import sys
+import subprocess
 
 # Add src directory to path
 sys.path.insert(0, 'src')
 
 from config import Config
+from data_fetcher import DataFetcher
+from cycle_analyzer import CycleAnalyzer
+from signal_generator import SignalGenerator
+from backtester import Backtester
 
 # Page configuration
 st.set_page_config(
@@ -40,8 +45,73 @@ st.markdown("""
     .negative-metric {
         color: #ff4444;
     }
+    .big-button {
+        font-size: 20px;
+        height: 60px;
+        width: 100%;
+    }
 </style>
 """, unsafe_allow_html=True)
+
+def run_analysis():
+    """Run the complete analysis pipeline"""
+    try:
+        with st.spinner('🔄 Running analysis... This may take 1-2 minutes'):
+            # Progress bar
+            progress_bar = st.progress(0)
+            status_text = st.empty()
+            
+            # Step 1: Fetch data
+            status_text.text('📡 Fetching market data...')
+            progress_bar.progress(20)
+            
+            fetcher = DataFetcher()
+            df = fetcher.update_latest_data(Config.TICKER)
+            
+            # Step 2: Cycle analysis
+            status_text.text('🔄 Performing cycle analysis...')
+            progress_bar.progress(40)
+            
+            analyzer = CycleAnalyzer()
+            df_analyzed = analyzer.analyze_cycle(df)
+            
+            # Step 3: Generate signals
+            status_text.text('🎯 Generating trading signals...')
+            progress_bar.progress(60)
+            
+            generator = SignalGenerator()
+            df_signals = generator.generate_signals(df_analyzed)
+            generator.save_signals(df_signals)
+            
+            # Step 4: Run backtest
+            status_text.text('📊 Running backtest...')
+            progress_bar.progress(80)
+            
+            backtester = Backtester()
+            wf_results = backtester.run_walk_forward_analysis(df_signals)
+            backtester.save_backtest_results(wf_results)
+            
+            # Step 5: Complete
+            status_text.text('✅ Analysis complete!')
+            progress_bar.progress(100)
+            
+            # Save summary
+            latest_signal = generator.get_latest_signal(df_signals)
+            summary = {
+                'timestamp': datetime.now().isoformat(),
+                'ticker': Config.TICKER,
+                'data_points': len(df_signals),
+                'latest_signal': latest_signal
+            }
+            
+            summary_file = os.path.join(Config.DATA_DIR, 'analysis_summary.json')
+            with open(summary_file, 'w') as f:
+                json.dump(summary, f, indent=2, default=str)
+            
+            return True, "Analysis completed successfully!"
+            
+    except Exception as e:
+        return False, f"Error: {str(e)}"
 
 def load_data():
     """Load all necessary data files"""
@@ -52,7 +122,6 @@ def load_data():
     if os.path.exists(signals_file):
         data['signals'] = pd.read_csv(signals_file, index_col='date', parse_dates=True)
     else:
-        st.error(f"Signals file not found: {signals_file}")
         return None
     
     # Load latest signal
@@ -140,8 +209,6 @@ def create_price_chart(df):
             ),
             row=2, col=1
         )
-        
-        # Add zero line
         fig.add_hline(y=0, row=2, col=1, line_dash="dash", line_color="gray")
     
     # Phase
@@ -155,13 +222,10 @@ def create_price_chart(df):
             ),
             row=3, col=1
         )
-        
-        # Add phase quadrant lines
         fig.add_hline(y=np.pi/2, row=3, col=1, line_dash="dash", line_color="gray", opacity=0.5)
         fig.add_hline(y=0, row=3, col=1, line_dash="dash", line_color="gray", opacity=0.5)
         fig.add_hline(y=-np.pi/2, row=3, col=1, line_dash="dash", line_color="gray", opacity=0.5)
     
-    # Update layout
     fig.update_layout(
         height=800,
         showlegend=True,
@@ -178,21 +242,17 @@ def create_price_chart(df):
 
 def create_equity_chart(df):
     """Create equity curve chart"""
-    # Calculate cumulative returns
     df['returns'] = df['close'].pct_change()
     df['strategy_returns'] = df['position'].shift(1) * df['returns']
     df['cumulative_strategy'] = (1 + df['strategy_returns']).cumprod()
     df['cumulative_buy_hold'] = (1 + df['returns']).cumprod()
     
-    # Normalize to starting capital
     initial_capital = Config.INITIAL_CAPITAL
     df['equity'] = df['cumulative_strategy'] * initial_capital
     df['buy_hold_equity'] = df['cumulative_buy_hold'] * initial_capital
     
-    # Create figure
     fig = go.Figure()
     
-    # Strategy equity
     fig.add_trace(
         go.Scatter(
             x=df.index,
@@ -202,7 +262,6 @@ def create_equity_chart(df):
         )
     )
     
-    # Buy & Hold equity
     fig.add_trace(
         go.Scatter(
             x=df.index,
@@ -230,13 +289,66 @@ def main():
     st.title(f"🎯 Kriterion Quant Trading System")
     st.markdown(f"### Cycle-Based Trading Strategy for {Config.TICKER}")
     
-    # Load data
+    # Check if data exists
     data = load_data()
     
+    # If no data, show setup page
     if data is None:
-        st.error("Failed to load data. Please run the analysis script first.")
+        st.warning("⚠️ No analysis data found. Please run the analysis first.")
+        
+        st.markdown("---")
+        
+        # Big centered container for the run button
+        col1, col2, col3 = st.columns([1, 2, 1])
+        
+        with col2:
+            st.markdown("### 🚀 Initial Setup")
+            st.info("""
+            This appears to be your first time using the dashboard. 
+            Click the button below to run the initial analysis and generate trading signals.
+            
+            This process will:
+            1. Fetch historical market data
+            2. Perform cycle analysis
+            3. Generate trading signals
+            4. Run backtesting
+            5. Create all necessary data files
+            """)
+            
+            # Check API key
+            if not Config.EODHD_API_KEY:
+                st.error("❌ EODHD API Key not configured!")
+                st.markdown("""
+                Please configure your API key:
+                1. Get an API key from [EODHD](https://eodhistoricaldata.com/)
+                2. Add it to Streamlit Secrets (Settings → Secrets)
+                3. Format: `EODHD_API_KEY = "your_key_here"`
+                """)
+                return
+            
+            # Run analysis button
+            if st.button("🎯 Run Initial Analysis", use_container_width=True, type="primary"):
+                success, message = run_analysis()
+                
+                if success:
+                    st.success(f"✅ {message}")
+                    st.balloons()
+                    st.markdown("### 🎉 Analysis Complete!")
+                    st.markdown("Click the button below to view the results.")
+                    if st.button("📊 View Dashboard", use_container_width=True):
+                        st.rerun()
+                else:
+                    st.error(f"❌ {message}")
+                    st.markdown("""
+                    **Troubleshooting tips:**
+                    - Check your API key is valid
+                    - Ensure you have internet connection
+                    - Check the error message above
+                    """)
+        
         return
     
+    # Regular dashboard view (when data exists)
     # Sidebar
     with st.sidebar:
         st.header("⚙️ Configuration")
@@ -248,7 +360,19 @@ def main():
         **Trading Fees:** {Config.TRADING_FEES*100:.1f}%
         """)
         
+        # Update analysis button
+        st.markdown("---")
+        st.markdown("### 🔄 Update Analysis")
+        if st.button("Run New Analysis", use_container_width=True):
+            success, message = run_analysis()
+            if success:
+                st.success(message)
+                st.rerun()
+            else:
+                st.error(message)
+        
         # Date range filter
+        st.markdown("---")
         st.header("📅 Date Range")
         df_signals = data['signals']
         
@@ -259,7 +383,6 @@ def main():
             max_value=df_signals.index[-1]
         )
         
-        # Filter data
         if len(date_range) == 2:
             mask = (df_signals.index >= pd.Timestamp(date_range[0])) & (df_signals.index <= pd.Timestamp(date_range[1]))
             df_filtered = df_signals.loc[mask]
@@ -275,7 +398,6 @@ def main():
         if 'latest_signal' in data:
             latest = data['latest_signal']
             
-            # Display metrics in columns
             col1, col2, col3, col4 = st.columns(4)
             
             with col1:
@@ -308,7 +430,6 @@ def main():
                     latest['phase_quadrant']
                 )
             
-            # Signal details
             st.subheader("📍 Signal Details")
             details_col1, details_col2 = st.columns(2)
             
@@ -320,7 +441,6 @@ def main():
                 """)
             
             with details_col2:
-                # Recommendation based on signal
                 if latest['signal'] == 'BUY':
                     st.success("🎯 **Action:** Enter Long Position")
                 elif latest['signal'] == 'SELL':
@@ -330,20 +450,16 @@ def main():
     
     with tab2:
         st.header("Cycle Analysis")
-        
-        # Interactive price chart
         st.subheader("📈 Price Chart with Signals")
         fig_price = create_price_chart(df_filtered)
         st.plotly_chart(fig_price, use_container_width=True)
         
-        # Phase distribution
         if 'phase_quadrant' in df_filtered.columns:
             st.subheader("🔄 Cycle Phase Distribution")
             
             col1, col2 = st.columns(2)
             
             with col1:
-                # Phase distribution pie chart
                 phase_counts = df_filtered['phase_quadrant'].value_counts()
                 fig_pie = go.Figure(data=[
                     go.Pie(
@@ -359,7 +475,6 @@ def main():
                 st.plotly_chart(fig_pie, use_container_width=True)
             
             with col2:
-                # Performance by phase
                 if 'summary' in data and 'cycle_analysis' in data['summary']:
                     cycle_info = data['summary']['cycle_analysis']
                     st.metric(
@@ -374,19 +489,15 @@ def main():
     
     with tab3:
         st.header("Backtest Results")
-        
-        # Equity curve
         st.subheader("💰 Equity Curve")
         fig_equity = create_equity_chart(df_filtered)
         st.plotly_chart(fig_equity, use_container_width=True)
         
-        # Performance metrics
         if 'backtest' in data:
             st.subheader("📊 Performance Metrics")
             
             col1, col2 = st.columns(2)
             
-            # Check if we have IS/OOS results
             if 'in_sample_metrics' in data['backtest']:
                 with col1:
                     st.markdown("**In-Sample Performance**")
@@ -402,7 +513,6 @@ def main():
                         if isinstance(value, (int, float)):
                             st.metric(key.replace('_', ' ').title(), f"{value:.2f}")
             else:
-                # Single backtest results
                 metrics = data['backtest'].get('metrics', {})
                 
                 with col1:
@@ -419,8 +529,6 @@ def main():
     
     with tab4:
         st.header("Trading History")
-        
-        # Recent signals
         st.subheader("📝 Recent Signals")
         recent_signals = df_filtered[df_filtered['signal'] != 'HOLD'].tail(20)
         
@@ -431,9 +539,7 @@ def main():
         else:
             st.info("No recent signals in the selected date range")
         
-        # Download data
         st.subheader("💾 Download Data")
-        
         csv = df_filtered.to_csv()
         st.download_button(
             label="Download Signals Data (CSV)",
@@ -442,10 +548,11 @@ def main():
             mime="text/csv"
         )
     
-    # Footer
     st.markdown("---")
     st.caption(f"Last updated: {data.get('summary', {}).get('timestamp', 'Unknown')}")
     st.caption("Kriterion Quant Trading System - Cycle-Based Strategy")
 
 if __name__ == "__main__":
+    # Create data directory if it doesn't exist
+    os.makedirs('data', exist_ok=True)
     main()
