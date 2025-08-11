@@ -17,11 +17,14 @@ jobs:
   analyze:
     runs-on: ubuntu-latest
     
+    # --- MODIFICA CHIAVE: AGGIUNTO BLOCCO PERMESSI ---
+    # Questo concede al GITHUB_TOKEN i permessi per scrivere nel repository.
+    permissions:
+      contents: write
+      
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
-      with:
-        token: ${{ secrets.GITHUB_TOKEN }}
     
     - name: Set up Python
       uses: actions/setup-python@v5
@@ -58,9 +61,16 @@ jobs:
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
         git add data/
-        git diff --quiet && git diff --staged --quiet || (git commit -m "Update analysis results - $(date +'%Y-%m-%d %H:%M')" && git push)
+        # Esegue commit e push solo se ci sono modifiche
+        if ! git diff-index --quiet HEAD --; then
+          git commit -m "Update analysis results - $(date -u +'%Y-%m-%d %H:%M')"
+          git push
+        else
+          echo "No changes to commit."
+        fi
     
     - name: Upload artifacts
+      if: always() # Esegui sempre, anche se il push non avviene
       uses: actions/upload-artifact@v4
       with:
         name: analysis-results
@@ -76,19 +86,3 @@ jobs:
       run: |
         echo "Dashboard will auto-update on Streamlit Cloud"
         echo "Visit: https://kriterion-quant.streamlit.app"
-         - name: Run analysis and commit results
-        run: |
-          # Il tuo comando per eseguire lo script Python
-          python main_script.py
-          
-          # Configurazione di Git e push
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git add -A
-          # Controlla se ci sono modifiche prima di fare il commit
-          if ! git diff-index --quiet HEAD; then
-            git commit -m "Update analysis results - $(date -u +'%Y-%m-%d %H:%M')"
-            git push
-          else
-            echo "No changes to commit."
-          fi
