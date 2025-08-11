@@ -1,45 +1,30 @@
 """
 Configuration module for Kriterion Quant Trading System
-Flexible version that prioritizes environment variables
+Central configuration for all system parameters
 """
 
 import os
-import json
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 
 # Load environment variables
 load_dotenv()
 
+# Helper function to determine ticker (NOT a class method)
+def get_ticker():
+    """Get ticker with priority to environment variables"""
+    # First priority: Environment variable
+    env_ticker = os.getenv('TICKER')
+    if env_ticker:
+        return env_ticker.upper()
+    
+    # Default - CHANGE THIS TO YOUR DESIRED TICKER
+    return 'SPY'  # ← CAMBIA QUESTO CON IL TUO TICKER
+
 class Config:
     """Central configuration class for the trading system"""
     
-    # TICKER CONFIGURATION - Priority order:
-    # 1. Environment variable TICKER
-    # 2. ticker_config.json file
-    # 3. Default value
-    
-    @classmethod
-    def get_ticker(cls):
-        """Get ticker with priority to environment variables"""
-        # First priority: Environment variable
-        env_ticker = os.getenv('TICKER')
-        if env_ticker:
-            return env_ticker.upper()
-        
-        # Second priority: ticker_config.json
-        if os.path.exists('ticker_config.json'):
-            try:
-                with open('ticker_config.json', 'r') as f:
-                    config = json.load(f)
-                    return config.get('ticker', 'SPY').upper()
-            except:
-                pass
-        
-        # Default
-        return 'SPY'  # CHANGE THIS TO YOUR DEFAULT TICKER
-    
-    # Set the ticker
+    # Set the ticker using the helper function
     TICKER = get_ticker()
     
     # API Keys and Tokens (from environment variables)
@@ -110,7 +95,7 @@ class Config:
         
         # Print configuration status
         print("✅ Configuration validated successfully")
-        print(f"  - Ticker: {cls.TICKER}")  # Show which ticker is being used
+        print(f"  - Ticker: {cls.TICKER}")
         print(f"  - EODHD API: Configured")
         print(f"  - Telegram: {'Configured' if cls.SEND_TELEGRAM_NOTIFICATIONS else 'Not configured (optional)'}")
         print(f"  - GitHub: {'Available' if cls.SAVE_TO_GITHUB else 'Not needed'}")
@@ -121,12 +106,3 @@ class Config:
     def get_phase_labels(cls):
         """Get phase quadrant labels for cycle analysis"""
         return cls.BULLISH_QUADRANTS + cls.BEARISH_QUADRANTS
-    
-    @classmethod
-    def set_ticker(cls, new_ticker):
-        """Dynamically change the ticker"""
-        cls.TICKER = new_ticker.upper()
-        # Save to config file
-        with open('ticker_config.json', 'w') as f:
-            json.dump({'ticker': cls.TICKER}, f)
-        print(f"✅ Ticker changed to: {cls.TICKER}")
