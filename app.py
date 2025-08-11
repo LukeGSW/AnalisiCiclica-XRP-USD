@@ -32,23 +32,151 @@ st.set_page_config(
 )
 
 # Custom CSS for better styling
+# Sostituisci la sezione CSS all'inizio di app.py con questa versione migliorata:
+
+# Custom CSS for better styling with dark mode support
 st.markdown("""
 <style>
-    .stMetric {
-        background-color: #f0f2f6;
-        padding: 10px;
+    /* Fix per metrics visibility */
+    [data-testid="metric-container"] {
+        background-color: #ffffff;
+        border: 1px solid #e0e0e0;
+        padding: 15px;
+        border-radius: 10px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin-bottom: 10px;
+    }
+    
+    /* Metric value styling */
+    [data-testid="metric-container"] > div:nth-child(1) {
+        color: #666666 !important;
+        font-size: 14px !important;
+        font-weight: 500 !important;
+    }
+    
+    [data-testid="metric-container"] > div:nth-child(2) {
+        color: #1f1f1f !important;
+        font-size: 24px !important;
+        font-weight: bold !important;
+    }
+    
+    [data-testid="metric-container"] > div:nth-child(3) {
+        color: #666666 !important;
+        font-size: 12px !important;
+    }
+    
+    /* Info boxes styling */
+    .stAlert > div {
+        background-color: #ffffff !important;
+        color: #1f1f1f !important;
+        border: 1px solid #4a90e2 !important;
+    }
+    
+    /* Success boxes */
+    div[data-baseweb="notification"][kind="success"] {
+        background-color: #d4edda !important;
+        color: #155724 !important;
+        border: 1px solid #c3e6cb !important;
+    }
+    
+    /* Warning boxes */
+    div[data-baseweb="notification"][kind="warning"] {
+        background-color: #fff3cd !important;
+        color: #856404 !important;
+        border: 1px solid #ffeaa7 !important;
+    }
+    
+    /* Error boxes */
+    div[data-baseweb="notification"][kind="error"] {
+        background-color: #f8d7da !important;
+        color: #721c24 !important;
+        border: 1px solid #f5c6cb !important;
+    }
+    
+    /* Sidebar styling */
+    section[data-testid="stSidebar"] {
+        background-color: #f8f9fa !important;
+    }
+    
+    section[data-testid="stSidebar"] .stAlert > div {
+        background-color: #e7f3ff !important;
+        color: #004085 !important;
+        border: 1px solid #b8daff !important;
+    }
+    
+    /* Button styling */
+    .stButton > button {
+        background-color: #4a90e2;
+        color: white;
+        border: none;
+        padding: 10px 24px;
         border-radius: 5px;
+        font-weight: 600;
+        transition: all 0.3s;
     }
-    .positive-metric {
-        color: #00cc44;
+    
+    .stButton > button:hover {
+        background-color: #357abd;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
     }
-    .negative-metric {
-        color: #ff4444;
+    
+    /* Primary button */
+    .stButton > button[kind="primary"] {
+        background-color: #28a745;
     }
-    .big-button {
-        font-size: 20px;
-        height: 60px;
-        width: 100%;
+    
+    .stButton > button[kind="primary"]:hover {
+        background-color: #218838;
+    }
+    
+    /* Headers */
+    h1, h2, h3 {
+        color: #1f1f1f !important;
+    }
+    
+    /* Tab styling */
+    .stTabs [data-baseweb="tab-list"] {
+        background-color: #f8f9fa;
+        border-radius: 10px;
+        padding: 5px;
+    }
+    
+    .stTabs [data-baseweb="tab"] {
+        color: #666666 !important;
+        font-weight: 500;
+    }
+    
+    .stTabs [aria-selected="true"] {
+        background-color: white !important;
+        color: #4a90e2 !important;
+        border-radius: 5px;
+        font-weight: 600;
+    }
+    
+    /* DataFrame styling */
+    .dataframe {
+        font-size: 14px !important;
+    }
+    
+    .dataframe th {
+        background-color: #4a90e2 !important;
+        color: white !important;
+        font-weight: 600 !important;
+    }
+    
+    .dataframe td {
+        background-color: white !important;
+        color: #1f1f1f !important;
+    }
+    
+    /* Progress bar */
+    .stProgress > div > div > div > div {
+        background-color: #4a90e2;
+    }
+    
+    /* Spinner text */
+    .stSpinner > div {
+        color: #4a90e2 !important;
     }
 </style>
 """, unsafe_allow_html=True)
