@@ -1,0 +1,15 @@
+on:
+  schedule:
+    # ETF Analysis - 4:30 PM
+    - cron: '30 21 * * 1-5'
+    
+  workflow_dispatch:
+    inputs:
+      ticker_group:
+        type: choice
+        description: 'Ticker Group'
+        options:
+        - 'ETFs: SPY,QQQ,IWM,DIA'
+        - 'Commodities: GLD,SLV,USO,UNG'
+        - 'Sectors: XLE,XLF,XLK,XLV'
+        - 'Custom'
