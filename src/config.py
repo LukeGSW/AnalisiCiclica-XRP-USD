@@ -19,7 +19,7 @@ def get_ticker():
         return env_ticker.upper()
     
     # Default - CHANGE THIS TO YOUR DESIRED TICKER
-    return 'SPY'  # ← CAMBIA QUESTO CON IL TUO TICKER
+    return 'BTC-USD'  # ← CAMBIA QUESTO CON IL TUO TICKER
 
 class Config:
     """Central configuration class for the trading system"""
@@ -34,7 +34,7 @@ class Config:
     GITHUB_TOKEN = os.getenv('GITHUB_TOKEN')  # Optional
     
     # Trading Parameters
-    EXCHANGE = 'US'  # Default exchange
+    EXCHANGE = 'CC'  # Default exchange
     
     # Analysis Parameters (matching the notebook)
     FAST_MA_WINDOW = 10  # Fast moving average for causal oscillator
