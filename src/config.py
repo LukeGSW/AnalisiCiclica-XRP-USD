@@ -51,7 +51,7 @@ class Config:
     IN_SAMPLE_RATIO = 0.7  # 70% for in-sample, 30% for out-of-sample
     
     # Data Parameters
-    LOOKBACK_DAYS = 1260  # 5 years of daily data (252 trading days/year)
+    LOOKBACK_DAYS = 2520  # 5 years of daily data (252 trading days/year)
     END_DATE = datetime.now().strftime('%Y-%m-%d')
     START_DATE = (datetime.now() - timedelta(days=LOOKBACK_DAYS)).strftime('%Y-%m-%d')
     
