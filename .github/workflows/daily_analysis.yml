@@ -11,7 +11,7 @@ on:
       ticker:
         description: 'Stock ticker to analyze'
         required: false
-        default: 'SPY'
+        default: 'BTC-USD'
 
 jobs:
   analyze:
