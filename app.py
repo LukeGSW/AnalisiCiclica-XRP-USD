@@ -81,7 +81,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-def run_analysis(lookback_years=10):
+def run_analysis(lookback_years=5):
     """Run the complete analysis pipeline with custom lookback"""
     try:
         with st.spinner(f'🔄 Running analysis with {lookback_years} years lookback... This may take 1-2 minutes'):
@@ -463,49 +463,23 @@ def main():
             )
         
         # Date range filter
-# ================= SEZIONE FILTRO DATA (LOOKBACK 10 ANNI) =================
-
-# ================= SEZIONE FILTRO DATA (CORRETTA) =================
-
-            st.markdown("---")
-            st.header("📅 Date Filter")
-            # Carica il DataFrame completo con tutti i segnali salvati
-            df_signals_full = data['signals']
-            
-            # 1. CALCOLA L'INTERVALLO DI LOOKBACK DI 10 ANNI
-            today = pd.Timestamp('today').normalize()
-            lookback_start_date = today - pd.DateOffset(years=10)
-            
-            # 2. PRE-FILTRA IL DATAFRAME PER MOSTRARE SOLO GLI ULTIMI 10 ANNI
-            #    Questo è il passaggio cruciale che mancava. Il DataFrame ora parte
-            #    dalla data di lookback, se disponibile.
-            df_lookback_view = df_signals_full.loc[df_signals_full.index >= lookback_start_date]
-            
-            # Se dopo il filtro il dataframe è vuoto (es. dati più vecchi di 10 anni),
-            # usa l'originale per evitare errori.
-            if df_lookback_view.empty:
-                df_lookback_view = df_signals_full
-            
-            # 3. USA IL DATAFRAME PRE-FILTRATO PER IMPOSTARE IL WIDGET
-            #    Ora min_value, max_value, e value si basano tutti sui dati degli ultimi 10 anni.
-            date_range = st.date_input(
-                "Select date range (default: last 10 years)",
-                value=(df_lookback_view.index[0], df_lookback_view.index[-1]),
-                min_value=df_lookback_view.index[0],
-                max_value=df_lookback_view.index[-1],
-                key="date_filter_widget" # Aggiungi una chiave unica per sicurezza
-            )
-            
-            # 4. FILTRA ULTERIORMENTE IN BASE ALLA SELEZIONE DELL'UTENTE
-            #    Questo filtro finale agisce sul DataFrame già ridotto al lookback di 10 anni.
-            if len(date_range) == 2:
-                mask = (df_lookback_view.index >= pd.Timestamp(date_range[0])) & (df_lookback_view.index <= pd.Timestamp(date_range[1]))
-                df_filtered = df_lookback_view.loc[mask]
-            else:
-                df_filtered = df_lookback_view
-            
-            # Da qui in poi, usa 'df_filtered' per le tue analisi e i tuoi grafici
-            # ==========================================================================
+        st.markdown("---")
+        st.header("📅 Date Filter")
+        df_signals = data['signals']
+        
+        date_range = st.date_input(
+            "Select date range",
+            value=(df_signals.index[0], df_signals.index[-1]),
+            min_value=df_signals.index[0],
+            max_value=df_signals.index[-1]
+        )
+        
+        # Filter data
+        if len(date_range) == 2:
+            mask = (df_signals.index >= pd.Timestamp(date_range[0])) & (df_signals.index <= pd.Timestamp(date_range[1]))
+            df_filtered = df_signals.loc[mask]
+        else:
+            df_filtered = df_signals
     
     # Main content area
     tab1, tab2, tab3, tab4 = st.tabs(["📊 Current Status", "📈 Analysis", "🎯 Backtest", "📋 History"])
