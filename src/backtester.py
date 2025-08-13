@@ -27,72 +27,72 @@ class Backtester:
         self.initial_capital = initial_capital or Config.INITIAL_CAPITAL
         self.fees = fees or Config.TRADING_FEES
     
+    # In src/backtester.py
+
     def run_backtest(self, df: pd.DataFrame) -> Dict:
         """
-        Run a simple vectorized backtest
-        
-        Parameters
-        ----------
-        df : pd.DataFrame
-            DataFrame with signals and prices
-        
-        Returns
-        -------
-        Dict
-            Backtest results and metrics
+        Esegue un backtest realistico basato su eventi, simulando un conto di trading.
         """
-        print("📊 Running backtest...")
+        print("📊 Running realistic event-based backtest...")
         
-        # Ensure required columns exist
         if 'signal' not in df.columns or 'close' not in df.columns:
             raise ValueError("DataFrame must contain 'signal' and 'close' columns")
-        
-        # Initialize results
+    
         results = df.copy()
+        trade_size = self.initial_capital  # Usiamo initial_capital come dimensione fissa del trade
         
-        # Calculate returns
-        results['returns'] = results['close'].pct_change().fillna(0)
-        
-        # Create position array
-        results['position'] = 0.0
-        
-        # Track positions based on signals
-        current_position = 0
-        positions = []
-        
-        for i, row in results.iterrows():
-            if row['signal'] == 'BUY':
-                current_position = 1
-            elif row['signal'] == 'SELL':
-                current_position = 0
-            positions.append(current_position)
-        
+        # Inizializza le colonne per il backtest
+        cash = self.initial_capital
+        shares = 0
+        equity = [cash]
+        positions = [0]
+        trades_log = []
+    
+        for i in range(1, len(results)):
+            current_price = results.iloc[i]['close']
+            signal = results.iloc[i]['signal']
+            
+            # Gestione dei segnali
+            if signal == 'BUY' and cash >= trade_size:
+                # Entra in posizione se non siamo già dentro
+                if shares == 0:
+                    shares_to_buy = (trade_size / current_price)
+                    shares += shares_to_buy
+                    cash -= shares_to_buy * current_price * (1 + self.fees)
+                    trades_log.append({'entry_date': results.index[i], 'entry_price': current_price})
+    
+            elif signal == 'SELL' and shares > 0:
+                # Esce dalla posizione
+                cash += shares * current_price * (1 - self.fees)
+                
+                # Logga il rendimento del trade
+                last_trade = trades_log[-1]
+                last_trade['exit_date'] = results.index[i]
+                last_trade['exit_price'] = current_price
+                last_trade['return'] = (current_price - last_trade['entry_price']) / last_trade['entry_price']
+                
+                shares = 0
+                
+            # Aggiorna l'equity giornaliera e la posizione
+            current_equity = cash + (shares * current_price)
+            equity.append(current_equity)
+            positions.append(1 if shares > 0 else 0)
+    
+        # Aggiungi i risultati al DataFrame
+        results['equity'] = equity
         results['position'] = positions
+        results['returns'] = results['close'].pct_change().fillna(0)
+        results['benchmark_equity'] = self.initial_capital * (1 + results['returns']).cumprod()
         
-        # Calculate strategy returns
-        results['strategy_returns'] = results['position'].shift(1).fillna(0) * results['returns']
-        
-        # Apply transaction costs
-        results['trade'] = results['position'].diff().abs()
-        results['costs'] = results['trade'] * self.fees
-        results['strategy_returns_net'] = results['strategy_returns'] - results['costs']
-        
-        # Calculate cumulative performance
-        results['cum_returns'] = (1 + results['returns']).cumprod()
-        results['cum_strategy'] = (1 + results['strategy_returns_net']).cumprod()
-        
-        # Calculate equity curve
-        results['equity'] = self.initial_capital * results['cum_strategy']
-        results['benchmark_equity'] = self.initial_capital * results['cum_returns']
-        
-        # Calculate metrics
-        metrics = self._calculate_metrics(results)
+        # Le metriche ora possono usare il log dei trade
+        metrics = self._calculate_metrics(results, trades_log)
         
         return {
             'results': results,
             'metrics': metrics,
             'final_equity': float(results['equity'].iloc[-1]),
-            'total_return': float((results['equity'].iloc[-1] / self.initial_capital - 1) * 100)
+            'total_return': float((results['equity'].iloc[-1] / self.initial_capital - 1) * 100),
+            'trades_log': trades_log
         }
     
     def run_walk_forward_analysis(
