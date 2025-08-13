@@ -296,43 +296,43 @@ def create_price_chart(df):
 
 # In app.py
 
-def create_equity_chart(df_results: pd.DataFrame):
-    """
-    Crea il grafico della curva di equity dai risultati del backtest.
-    df_results: Il DataFrame 'results' restituito dal Backtester.
-    """
-    fig = go.Figure()
-    
-    # Grafico dell'equity della strategia
-    fig.add_trace(
-        go.Scatter(
-            x=df_results.index,
-            y=df_results['equity'], # Usa la colonna 'equity' già calcolata
-            name='Strategy',
-            line=dict(color='blue', width=2)
+    def create_equity_chart(df_results: pd.DataFrame):
+        """
+        Crea il grafico della curva di equity dai risultati del backtest.
+        df_results: Il DataFrame 'results' restituito dal Backtester.
+        """
+        fig = go.Figure()
+        
+        # Grafico dell'equity della strategia
+        fig.add_trace(
+            go.Scatter(
+                x=df_results.index,
+                y=df_results['equity'], # Usa la colonna 'equity' già calcolata
+                name='Strategy',
+                line=dict(color='blue', width=2)
+            )
         )
-    )
-    
-    # Grafico dell'equity del benchmark (Buy & Hold)
-    fig.add_trace(
-        go.Scatter(
-            x=df_results.index,
-            y=df_results['benchmark_equity'], # Usa la colonna 'benchmark_equity' già calcolata
-            name='Buy & Hold',
-            line=dict(color='gray', width=1, dash='dash')
+        
+        # Grafico dell'equity del benchmark (Buy & Hold)
+        fig.add_trace(
+            go.Scatter(
+                x=df_results.index,
+                y=df_results['benchmark_equity'], # Usa la colonna 'benchmark_equity' già calcolata
+                name='Buy & Hold',
+                line=dict(color='gray', width=1, dash='dash')
+            )
         )
-    )
-    
-    fig.update_layout(
-        title='Equity Curve Comparison',
-        xaxis_title='Date',
-        yaxis_title='Portfolio Value ($)',
-        height=400,
-        hovermode='x unified',
-        template='plotly_white'
-    )
-    
-    return fig
+        
+        fig.update_layout(
+            title='Equity Curve Comparison',
+            xaxis_title='Date',
+            yaxis_title='Portfolio Value ($)',
+            height=400,
+            hovermode='x unified',
+            template='plotly_white'
+        )
+        
+        return fig
 
 def main():
     """Main dashboard function"""
