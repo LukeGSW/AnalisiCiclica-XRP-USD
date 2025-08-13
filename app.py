@@ -81,7 +81,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-def run_analysis(lookback_years=5):
+def run_analysis(lookback_years=10):
     """Run the complete analysis pipeline with custom lookback"""
     try:
         with st.spinner(f'🔄 Running analysis with {lookback_years} years lookback... This may take 1-2 minutes'):
