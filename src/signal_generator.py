@@ -48,11 +48,12 @@ class SignalGenerator:
         result_df['in_bullish'] = result_df['phase_quadrant'].isin(Config.BULLISH_QUADRANTS)
         
         # Generate entry signals (transition into bullish regime)
-        entries = result_df['in_bullish'] & ~result_df['in_bullish'].shift(1).fillna(False)
+        entries = result_df['in_bullish'] & ~result_df['in_bullish'].shift(1, fill_value=False)
         result_df.loc[entries, 'signal'] = 'BUY'
         
         # Generate exit signals (transition out of bullish regime)
-        exits = ~result_df['in_bullish'] & result_df['in_bullish'].shift(1).fillna(False)
+        exits = ~result_df['in_bullish'] & result_df['in_bullish'].shift(1, fill_value=False)
+
         result_df.loc[exits, 'signal'] = 'SELL'
         
         # Add position tracking
