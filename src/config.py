@@ -50,10 +50,21 @@ class Config:
     TRADING_FEES = float(os.getenv('TRADING_FEES', 0.001))  # 0.1% per trade
     IN_SAMPLE_RATIO = 0.7  # 70% for in-sample, 30% for out-of-sample
     
-    # Data Parameters
-    LOOKBACK_DAYS = 2520  # 10 years of daily data (252 trading days/year)
+    # ======================================================================
+    # Data Parameters (CORRETTO)
+    
+    # Definisci il lookback desiderato in anni.
+    LOOKBACK_YEARS = 10
+    
+    # Calcola correttamente la data di inizio sottraendo anni di calendario.
+    # Moltiplichiamo per 365.25 per tenere conto degli anni bisestili.
     END_DATE = datetime.now().strftime('%Y-%m-%d')
-    START_DATE = (datetime.now() - timedelta(days=LOOKBACK_DAYS)).strftime('%Y-%m-%d')
+    START_DATE = (datetime.now() - timedelta(days=LOOKBACK_YEARS * 365.25)).strftime('%Y-%m-%d')
+    
+    # Variabile deprecata, la lasciamo per compatibilità ma non è più il driver principale
+    LOOKBACK_DAYS = LOOKBACK_YEARS * 252
+    
+    # ======================================================================
     
     # File Paths
     DATA_DIR = 'data'
