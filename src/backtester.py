@@ -150,90 +150,62 @@ class Backtester:
         
         return result
     
-    def _calculate_metrics(self, results: pd.DataFrame) -> Dict:
+    # In src/backtester.py
+
+    def _calculate_metrics(self, results: pd.DataFrame, trades_log: list = []) -> Dict:
         """
-        Calculate comprehensive backtest metrics
-        
-        Parameters
-        ----------
-        results : pd.DataFrame
-            Backtest results DataFrame
-        
-        Returns
-        -------
-        Dict
-            Performance metrics
+        Calcola le metriche complete del backtest.
         """
-        # Basic returns metrics
-        total_return = float((results['equity'].iloc[-1] / self.initial_capital - 1) * 100)
+        # ... (tutta la parte iniziale di calcolo drawdown, sharpe, etc. rimane uguale)
         
-        # Calculate drawdown
+        # Calcolo drawdown
         running_max = results['equity'].expanding().max()
         drawdown = (results['equity'] - running_max) / running_max
         max_drawdown = float(drawdown.min() * 100)
         
-        # Risk metrics
-        strategy_returns = results['strategy_returns_net']
-        
-        # Remove any NaN or infinite values
-        strategy_returns = strategy_returns.replace([np.inf, -np.inf], np.nan).dropna()
-        
-        if len(strategy_returns) > 0 and strategy_returns.std() > 0:
-            daily_mean = strategy_returns.mean()
-            daily_std = strategy_returns.std()
-            
-            # Sharpe ratio (annualized)
+        # ... (calcolo sharpe, sortino, calmar... rimane uguale)
+        # ... usa results['equity'].pct_change() al posto di strategy_returns_net
+        daily_strategy_returns = results['equity'].pct_change().fillna(0)
+    
+        # ... calcola sharpe, sortino, calmar usando daily_strategy_returns ...
+        if len(daily_strategy_returns) > 0 and daily_strategy_returns.std() > 0:
+            daily_mean = daily_strategy_returns.mean()
+            daily_std = daily_strategy_returns.std()
             sharpe_ratio = float((daily_mean / daily_std) * np.sqrt(252)) if daily_std != 0 else 0
             
-            # Sortino ratio (downside deviation)
-            negative_returns = strategy_returns[strategy_returns < 0]
+            negative_returns = daily_strategy_returns[daily_strategy_returns < 0]
             if len(negative_returns) > 0:
                 downside_std = negative_returns.std()
                 sortino_ratio = float((daily_mean / downside_std) * np.sqrt(252)) if downside_std != 0 else 0
             else:
-                sortino_ratio = float(sharpe_ratio)  # If no negative returns, use Sharpe
+                sortino_ratio = float('inf')
             
-            # Calmar ratio
             annual_return = daily_mean * 252 * 100
             calmar_ratio = float(annual_return / abs(max_drawdown)) if max_drawdown != 0 else 0
         else:
             sharpe_ratio = sortino_ratio = calmar_ratio = 0.0
-        
-        # Trading statistics
-        trades = results['trade'].sum() / 2  # Divide by 2 for round trips
-        
-        # Calculate win rate from trade-by-trade analysis
-        trade_returns = []
-        entry_price = None
-        
-        for i in range(len(results)):
-            if results.iloc[i]['signal'] == 'BUY' and entry_price is None:
-                entry_price = results.iloc[i]['close']
-            elif results.iloc[i]['signal'] == 'SELL' and entry_price is not None:
-                exit_price = results.iloc[i]['close']
-                trade_return = (exit_price - entry_price) / entry_price
-                trade_returns.append(trade_return)
-                entry_price = None
+    
+        # Usa il trade_log per calcolare le statistiche dei trade (molto più preciso)
+        trade_returns = [t['return'] for t in trades_log if 'return' in t]
         
         if trade_returns:
-            winning_trades = sum(1 for r in trade_returns if r > 0)
-            win_rate = float((winning_trades / len(trade_returns)) * 100)
+            winning_trades = sum(1 for r in trade_returns if r > self.fees * 2) # Considera i costi
+            win_rate = float((winning_trades / len(trade_returns)) * 100) if trade_returns else 0.0
             
-            # Profit factor
             gross_profits = sum(r for r in trade_returns if r > 0)
             gross_losses = abs(sum(r for r in trade_returns if r < 0))
-            profit_factor = float(gross_profits / gross_losses) if gross_losses != 0 else 0.0
+            profit_factor = float(gross_profits / gross_losses) if gross_losses != 0 else float('inf')
         else:
             win_rate = 0.0
             profit_factor = 0.0
-        
+            
         return {
-            'total_return_%': total_return,
+            'total_return_%': float((results['equity'].iloc[-1] / self.initial_capital - 1) * 100),
             'max_drawdown_%': abs(max_drawdown),
             'sharpe_ratio': sharpe_ratio,
             'sortino_ratio': sortino_ratio,
             'calmar_ratio': calmar_ratio,
-            'total_trades': int(trades),
+            'total_trades': len(trade_returns),
             'win_rate_%': win_rate,
             'profit_factor': profit_factor
         }
