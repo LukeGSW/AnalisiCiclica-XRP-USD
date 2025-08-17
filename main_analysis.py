@@ -28,9 +28,22 @@ def main():
     print(f"Ticker: {Config.TICKER}")
     print(f"Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print("=" * 50)
-    
-    # Initialize components
+
+    # Definiamo e creiamo il percorso dati specifico per il ticker
+    base_data_dir = 'data'
+    ticker_data_path = os.path.join(base_data_dir, Config.TICKER)
+    os.makedirs(ticker_data_path, exist_ok=True)
+    print(f"📂 I dati di output verranno salvati in: {ticker_data_path}")
+
+    # ================================================================= #
+    #    INIZIALIZZAZIONE UNICA DI TUTTI I COMPONENTI ALL'INIZIO          #
+    # ================================================================= #
     notifier = TelegramNotifier()
+    fetcher = DataFetcher(data_path=ticker_data_path)
+    analyzer = CycleAnalyzer()
+    generator = SignalGenerator(data_path=ticker_data_path)
+    backtester = Backtester(data_path=ticker_data_path)
+    # ================================================================= #
     
     try:
         # Validate configuration
@@ -42,7 +55,7 @@ def main():
         print("STEP 1: DATA ACQUISITION")
         print("=" * 30)
         
-        fetcher = DataFetcher()
+        # --- RIGA RIMOSSA: fetcher = DataFetcher() ---
         df = fetcher.update_latest_data(Config.TICKER)
         print(f"📊 Data range: {df.index[0].date()} to {df.index[-1].date()}")
         print(f"📊 Total data points: {len(df)}")
@@ -52,14 +65,12 @@ def main():
         print("STEP 2: CYCLE ANALYSIS")
         print("=" * 30)
         
-        analyzer = CycleAnalyzer()
+        # --- RIGA RIMOSSA: analyzer = CycleAnalyzer() ---
         df_analyzed = analyzer.analyze_cycle(df)
         
-        # Run spectral analysis for validation
         spectral_results = analyzer.run_spectral_analysis(df_analyzed['oscillator'])
         print(f"🔍 Dominant cycle period: {spectral_results['dominant_period']:.1f} days")
         
-        # Test statistical significance
         monte_carlo_results = analyzer.run_monte_carlo_significance_test(df_analyzed['oscillator'])
         print(f"📊 Cycle significance p-value: {monte_carlo_results['p_value']:.4f}")
         
@@ -73,17 +84,15 @@ def main():
         print("STEP 3: SIGNAL GENERATION")
         print("=" * 30)
         
-        generator = SignalGenerator()
+        # --- RIGA RIMOSSA: generator = SignalGenerator() ---
         df_signals = generator.generate_signals(df_analyzed)
         
-        # Get latest signal
         latest_signal = generator.get_latest_signal(df_signals)
         print(f"📍 Latest Signal: {latest_signal['signal']}")
         print(f"📍 Current Position: {latest_signal['position']}")
         print(f"📍 Signal Strength: {latest_signal['signal_strength']:.1f}/100")
         print(f"📍 Confidence: {latest_signal['confidence']}")
         
-        # Save signals
         generator.save_signals(df_signals)
         
         # Step 4: Run backtest
@@ -91,12 +100,9 @@ def main():
         print("STEP 4: BACKTESTING")
         print("=" * 30)
         
-        backtester = Backtester()
-        
-        # Run walk-forward analysis
+        # --- RIGA RIMOSSA: backtester = Backtester() ---
         wf_results = backtester.run_walk_forward_analysis(df_signals)
         
-        # Display results
         if 'in_sample' in wf_results:
             print("\n📊 In-Sample Performance:")
             is_metrics = wf_results['in_sample']['metrics']
@@ -108,44 +114,43 @@ def main():
             for key, value in oos_metrics.items():
                 print(f"  {key}: {value:.2f}")
             
-            # Save backtest results
             backtester.save_backtest_results(wf_results)
-            
-            # Use OOS metrics for notifications
             backtest_metrics = oos_metrics
         else:
-            # Use aggregated metrics from rolling walk-forward
             backtest_metrics = wf_results['aggregated_metrics']
             print("\n📊 Aggregated Out-of-Sample Performance:")
             for key, value in backtest_metrics.items():
                 if 'avg_' in key:
                     print(f"  {key}: {value:.2f}")
         
+        # ================================================================= #
+        #                <<< INSERISCI QUESTO BLOCCO QUI >>>                  #
+        # ================================================================= #
         # Step 5: Send notifications
         print("\n" + "=" * 30)
         print("STEP 5: NOTIFICATIONS")
         print("=" * 30)
         
         if Config.SEND_TELEGRAM_NOTIFICATIONS:
-            # Send signal alert if there's a new signal
+            # Invia l'alert del segnale solo se non è 'HOLD'
             if latest_signal['signal'] != 'HOLD':
                 notifier.send_signal_alert(latest_signal)
-            
-            # Send daily summary
+        
+            # Invia sempre il riepilogo giornaliero
             notifier.send_daily_summary(latest_signal, backtest_metrics)
+            print("✅ Telegram notifications sent.")
         else:
             print("📵 Telegram notifications disabled")
-        
+        # ================================================================= #
+
         # Step 6: Create summary report
         print("\n" + "=" * 30)
         print("STEP 6: SUMMARY REPORT")
         print("=" * 30)
         
         summary = {
-            'timestamp': datetime.now().isoformat(),
-            'ticker': Config.TICKER,
-            'data_points': len(df_signals),
-            'latest_signal': latest_signal,
+            'timestamp': datetime.now().isoformat(), 'ticker': Config.TICKER,
+            'data_points': len(df_signals), 'latest_signal': latest_signal,
             'backtest_metrics': backtest_metrics,
             'cycle_analysis': {
                 'dominant_period': spectral_results['dominant_period'],
@@ -154,8 +159,8 @@ def main():
             }
         }
         
-        # Save summary
-        summary_file = os.path.join(Config.DATA_DIR, 'analysis_summary.json')
+        summary_filename = 'analysis_summary.json'
+        summary_file = os.path.join(ticker_data_path, summary_filename)
         with open(summary_file, 'w') as f:
             json.dump(summary, f, indent=2, default=str)
         print(f"📄 Summary saved to {summary_file}")
@@ -169,11 +174,8 @@ def main():
     except Exception as e:
         error_msg = f"Error in main analysis: {str(e)}\n{traceback.format_exc()}"
         print(f"\n❌ {error_msg}")
-        
-        # Send error notification
         if Config.SEND_TELEGRAM_NOTIFICATIONS:
             notifier.send_error_alert(str(e))
-        
         return False
 
 if __name__ == "__main__":
