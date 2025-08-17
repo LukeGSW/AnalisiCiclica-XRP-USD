@@ -7,25 +7,32 @@ import pandas as pd
 import numpy as np
 from typing import Dict, List
 import json
-
+import os
 from config import Config
 
 class Backtester:
     """Class to perform realistic, event-driven backtesting."""
     
-    def __init__(self, initial_capital: float = None, fees: float = None):
+    # ================================================================= #
+    #                     <<< SEZIONE MODIFICATA 1 >>>                    #
+    # ================================================================= #
+    def __init__(self, data_path: str, initial_capital: float = None, fees: float = None):
         """
         Initialize the backtester.
         
         Parameters
         ----------
+        data_path : str
+            The path to the directory where backtest results will be saved.
         initial_capital : float, optional
-            Starting capital. Also used as the fixed trade size. Defaults to Config.INITIAL_CAPITAL.
+            Starting capital. Defaults to Config.INITIAL_CAPITAL.
         fees : float, optional
             Trading fees as a percentage. Defaults to Config.TRADING_FEES.
         """
+        self.data_path = data_path
         self.initial_capital = initial_capital or Config.INITIAL_CAPITAL
         self.fees = fees or Config.TRADING_FEES
+    # ================================================================= #
 
     def run_backtest(self, df: pd.DataFrame) -> Dict:
         """
@@ -206,21 +213,25 @@ class Backtester:
             'profit_factor': float(profit_factor)
         }
         
-    def save_backtest_results(self, results: Dict, filename: str = None) -> str:
+    # ================================================================= #
+    #                     <<< SEZIONE MODIFICATA 2 >>>                    #
+    # ================================================================= #
+    def save_backtest_results(self, results: Dict) -> str:
         """
-        Save backtest results to JSON file.
+        Save backtest results to JSON file inside the data_path directory.
         """
-        filename = filename or Config.BACKTEST_RESULTS_FILE
+        # Costruiamo il percorso completo partendo da self.data_path
+        filepath = os.path.join(self.data_path, 'backtest_results.json')
         
-        # Rimuovi i DataFrame per la serializzazione
         serializable_results = {}
         if 'in_sample_metrics' in results:
-            serializable_results['in_sample_metrics'] = results['in_sample_metrics']
+            serializable_results['in_sample'] = results['in_sample_metrics']
         if 'out_of_sample_metrics' in results:
-            serializable_results['out_of_sample_metrics'] = results['out_of_sample_metrics']
+            serializable_results['out_of_sample'] = results['out_of_sample_metrics']
             
-        with open(filename, 'w') as f:
+        with open(filepath, 'w') as f:
             json.dump(serializable_results, f, indent=2)
             
-        print(f"💾 Backtest results saved to {filename}")
-        return filename
+        print(f"💾 Backtest results saved to {filepath}")
+        return filepath
+    # ================================================================= #
