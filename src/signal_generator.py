@@ -15,11 +15,22 @@ from config import Config
 class SignalGenerator:
     """Class to generate trading signals from cycle analysis"""
     
-    def __init__(self):
-        """Initialize the signal generator"""
+    # ================================================================= #
+    #                     <<< SEZIONE MODIFICATA 1 >>>                    #
+    # ================================================================= #
+    def __init__(self, data_path: str):
+        """
+        Initialize the signal generator
+        
+        Parameters
+        ----------
+        data_path : str
+            The path to the directory where signal files will be saved.
+        """
+        self.data_path = data_path
         self.last_signal = None
         self.signal_history = []
-    
+    # ================================================================= #
     def generate_signals(self, df: pd.DataFrame) -> pd.DataFrame:
         """
         Generate trading signals based on cycle phase
@@ -156,70 +167,47 @@ class SignalGenerator:
         
         return signal_info
     
-    def save_signals(self, df: pd.DataFrame, filename: str = None) -> str:
+    # ================================================================= #
+    #                     <<< SEZIONE MODIFICATA 2 >>>                    #
+    # ================================================================= #
+    def save_signals(self, df: pd.DataFrame) -> str:
         """
-        Save signals to CSV file
-        
-        Parameters
-        ----------
-        df : pd.DataFrame
-            DataFrame with signals
-        filename : str, optional
-            Output filename. Defaults to Config.SIGNALS_FILE
-        
-        Returns
-        -------
-        str
-            Path to saved file
+        Save signals to CSV and latest signal to JSON inside the data_path directory.
         """
-        filename = filename or Config.SIGNALS_FILE
+        # Costruiamo il percorso completo partendo da self.data_path
+        csv_filepath = os.path.join(self.data_path, 'signals.csv')
         
-        # Select relevant columns for saving
         columns_to_save = [
             'open', 'high', 'low', 'close', 'volume',
             'oscillator', 'phase', 'amplitude', 'phase_quadrant',
             'signal', 'position', 'signal_strength', 'confidence'
         ]
-        
-        # Filter to existing columns
         columns_to_save = [col for col in columns_to_save if col in df.columns]
         
-        # Save to CSV
-        df[columns_to_save].to_csv(filename)
-        print(f"💾 Signals saved to {filename}")
+        df[columns_to_save].to_csv(csv_filepath)
+        print(f"💾 Signals saved to {csv_filepath}")
         
-        # Also save latest signal as JSON for easy access
         latest_signal = self.get_latest_signal(df)
-        json_filename = filename.replace('.csv', '_latest.json')
-        with open(json_filename, 'w') as f:
+        json_filepath = os.path.join(self.data_path, 'signals_latest.json')
+        with open(json_filepath, 'w') as f:
             json.dump(latest_signal, f, indent=2)
-        print(f"📄 Latest signal saved to {json_filename}")
+        print(f"📄 Latest signal saved to {json_filepath}")
         
-        return filename
-    
-    def load_signals(self, filename: str = None) -> pd.DataFrame:
+        return csv_filepath
+
+    def load_signals(self) -> pd.DataFrame:
         """
-        Load signals from CSV file
-        
-        Parameters
-        ----------
-        filename : str, optional
-            Input filename. Defaults to Config.SIGNALS_FILE
-        
-        Returns
-        -------
-        pd.DataFrame
-            DataFrame with signals
+        Load signals from CSV file inside the data_path directory.
         """
-        filename = filename or Config.SIGNALS_FILE
+        filepath = os.path.join(self.data_path, 'signals.csv')
         
-        if not os.path.exists(filename):
-            raise FileNotFoundError(f"Signals file not found: {filename}")
+        if not os.path.exists(filepath):
+            raise FileNotFoundError(f"Signals file not found: {filepath}")
         
-        df = pd.read_csv(filename, index_col='date', parse_dates=True)
-        print(f"📂 Loaded signals from {filename}")
+        df = pd.read_csv(filepath, index_col='date', parse_dates=True)
+        print(f"📂 Loaded signals from {filepath}")
         return df
-    
+    # ================================================================= #
     def generate_alert_message(self, signal_info: Dict) -> str:
         """
         Generate a formatted alert message for notifications
