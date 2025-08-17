@@ -56,29 +56,46 @@ jobs:
       run: |
         python main_analysis.py
     
+    # ================================================================= #
+    #                     <<< SEZIONE MODIFICATA 1 >>>                    #
+    # ================================================================= #
     - name: Commit and push results
+      env:
+        # Rendiamo il ticker disponibile anche in questo step
+        TICKER: ${{ github.event.inputs.ticker || 'SPY' }}
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
-        git add data/
-        # Esegue commit e push solo se ci sono modifiche
+        
+        # Aggiungiamo al commit la cartella specifica del ticker (es. data/SPY/)
+        git add data/${{ env.TICKER }}/
+        
+        # Aggiungiamo il ticker al messaggio di commit per maggiore chiarezza
         if ! git diff-index --quiet HEAD --; then
-          git commit -m "Update analysis results - $(date -u +'%Y-%m-%d %H:%M')"
+          git commit -m "Update analysis results for ${{ env.TICKER }} - $(date -u +'%Y-%m-%d %H:%M')"
           git push
         else
-          echo "No changes to commit."
+          echo "No changes to commit for ${{ env.TICKER }}."
         fi
     
+    # ================================================================= #
+    #                     <<< SEZIONE MODIFICATA 2 >>>                    #
+    # ================================================================= #
     - name: Upload artifacts
       if: always() # Esegui sempre, anche se il push non avviene
       uses: actions/upload-artifact@v4
+      env:
+        # Rendiamo il ticker disponibile anche in questo step
+        TICKER: ${{ github.event.inputs.ticker || 'SPY' }}
       with:
-        name: analysis-results
+        # Rendiamo il nome dell'artefatto specifico per il ticker
+        name: analysis-results-${{ env.TICKER }}
+        # Aggiorniamo tutti i percorsi per puntare alla sottocartella
         path: |
-          data/signals.csv
-          data/signals_latest.json
-          data/backtest_results.json
-          data/analysis_summary.json
+          data/${{ env.TICKER }}/signals.csv
+          data/${{ env.TICKER }}/signals_latest.json
+          data/${{ env.TICKER }}/backtest_results.json
+          data/${{ env.TICKER }}/analysis_summary.json
         retention-days: 30
     
     - name: Deploy to Streamlit Cloud
