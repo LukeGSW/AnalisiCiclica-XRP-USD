@@ -15,22 +15,30 @@ from config import Config
 class DataFetcher:
     """Class to handle data fetching from EODHD API"""
     
-    def __init__(self, api_key: str = None):
+    # ================================================================= #
+    #                     <<< SEZIONE MODIFICATA 1 >>>                    #
+    # ================================================================= #
+    def __init__(self, data_path: str, api_key: str = None):
         """
         Initialize the data fetcher
         
         Parameters
         ----------
+        data_path : str
+            The path to the directory where data should be saved/loaded.
         api_key : str, optional
-            EODHD API key. If not provided, will use from Config
+            EODHD API key. If not provided, will use from Config.
         """
         self.api_key = api_key or Config.EODHD_API_KEY
         if not self.api_key:
             raise ValueError("EODHD API key is required")
         
-        # Create data directory if it doesn't exist
-        os.makedirs(Config.DATA_DIR, exist_ok=True)
-    
+        # Salviamo il percorso dati fornito dall'esterno
+        self.data_path = data_path
+        
+        # La creazione della directory non è più responsabilità di questa classe.
+        # La riga 'os.makedirs(Config.DATA_DIR, exist_ok=True)' è stata rimossa.
+    # ================================================================= #
     def fetch_historical_data(
         self,
         ticker: str = None,
@@ -120,50 +128,35 @@ class DataFetcher:
         
         raise Exception(f"Failed to fetch data after {max_retries} retries")
     
-    def save_data(self, df: pd.DataFrame, filename: str = None) -> str:
+    # ================================================================= #
+    #                     <<< SEZIONE MODIFICATA 2 >>>                    #
+    # ================================================================= #
+    def save_data(self, df: pd.DataFrame) -> str:
         """
-        Save DataFrame to CSV file
-        
-        Parameters
-        ----------
-        df : pd.DataFrame
-            DataFrame to save
-        filename : str, optional
-            Filename to save to. Defaults to Config.HISTORICAL_DATA_FILE
-        
-        Returns
-        -------
-        str
-            Path to saved file
+        Save DataFrame to 'historical_data.csv' inside the data_path directory.
         """
-        filename = filename or Config.HISTORICAL_DATA_FILE
-        df.to_csv(filename)
-        print(f"💾 Data saved to {filename}")
-        return filename
+        # Il nome del file è ora standard, ma il percorso è dinamico.
+        filename = 'historical_data.csv'
+        filepath = os.path.join(self.data_path, filename)
+        
+        df.to_csv(filepath)
+        print(f"💾 Data saved to {filepath}")
+        return filepath
     
-    def load_data(self, filename: str = None) -> pd.DataFrame:
+    def load_data(self) -> pd.DataFrame:
         """
-        Load DataFrame from CSV file
-        
-        Parameters
-        ----------
-        filename : str, optional
-            Filename to load from. Defaults to Config.HISTORICAL_DATA_FILE
-        
-        Returns
-        -------
-        pd.DataFrame
-            Loaded DataFrame
+        Load DataFrame from 'historical_data.csv' inside the data_path directory.
         """
-        filename = filename or Config.HISTORICAL_DATA_FILE
+        filename = 'historical_data.csv'
+        filepath = os.path.join(self.data_path, filename)
         
-        if not os.path.exists(filename):
-            raise FileNotFoundError(f"Data file not found: {filename}")
+        if not os.path.exists(filepath):
+            raise FileNotFoundError(f"Data file not found: {filepath}")
         
-        df = pd.read_csv(filename, index_col='date', parse_dates=True)
-        print(f"📂 Loaded {len(df)} days of data from {filename}")
+        df = pd.read_csv(filepath, index_col='date', parse_dates=True)
+        print(f"📂 Loaded {len(df)} days of data from {filepath}")
         return df
-    
+    # ================================================================= #
     def update_latest_data(self, ticker: str = None) -> pd.DataFrame:
         """
         Update data with the latest available information
