@@ -52,7 +52,7 @@ jobs:
         EODHD_API_KEY: ${{ secrets.EODHD_API_KEY }}
         TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
         TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        TICKER: ${{ github.event.inputs.ticker || 'SPY' }}
+        TICKER: ${{ github.event.inputs.ticker || 'BTC-USD' }}
       run: |
         python main_analysis.py
     
@@ -62,12 +62,12 @@ jobs:
     - name: Commit and push results
       env:
         # Rendiamo il ticker disponibile anche in questo step
-        TICKER: ${{ github.event.inputs.ticker || 'SPY' }}
+        TICKER: ${{ github.event.inputs.ticker || 'BTC-USD' }}
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
         
-        # Aggiungiamo al commit la cartella specifica del ticker (es. data/SPY/)
+        # Aggiungiamo al commit la cartella specifica del ticker (es. data/BTC-USD/)
         git add data/${{ env.TICKER }}/
         
         # Aggiungiamo il ticker al messaggio di commit per maggiore chiarezza
@@ -86,7 +86,7 @@ jobs:
       uses: actions/upload-artifact@v4
       env:
         # Rendiamo il ticker disponibile anche in questo step
-        TICKER: ${{ github.event.inputs.ticker || 'SPY' }}
+        TICKER: ${{ github.event.inputs.ticker || 'BTC-USD' }}
       with:
         # Rendiamo il nome dell'artefatto specifico per il ticker
         name: analysis-results-${{ env.TICKER }}
