@@ -1,28 +1,28 @@
 {
-  "timestamp": "2025-08-17T16:13:41.638831",
+  "timestamp": "2025-08-19T04:04:18.518679",
   "ticker": "BTC-USD",
-  "data_points": 3613,
+  "data_points": 3615,
   "latest_signal": {
-    "date": "2025-08-16",
+    "date": "2025-08-18",
     "signal": "HOLD",
     "position": "FLAT",
     "phase_quadrant": "Quadrante 3 (Picco -> Discesa)",
-    "phase_value": 1.2981099148477775,
-    "oscillator_value": 1347.701089838636,
-    "signal_strength": 30.41833027196746,
-    "confidence": "MEDIUM",
-    "price": 117491.3483895253,
-    "timestamp": "2025-08-17T16:13:40.183469"
+    "phase_value": 1.3668162260286056,
+    "oscillator_value": 963.9625776832108,
+    "signal_strength": 28.954568179813712,
+    "confidence": "LOW",
+    "price": 116252.3119358528,
+    "timestamp": "2025-08-19T04:04:17.122156"
   },
   "backtest_metrics": {
-    "total_return_%": 319.4143635944801,
-    "max_drawdown_%": 8.85466177149856,
-    "sharpe_ratio": 1.0479479594278676,
-    "sortino_ratio": 3.4547748240595904,
-    "calmar_ratio": 4.397521997182079,
-    "total_trades": 14,
-    "win_rate_%": 85.71428571428571,
-    "profit_factor": 16.43616437287957
+    "total_return_%": 328.2690253659786,
+    "max_drawdown_%": 7.434441965885477,
+    "sharpe_ratio": 1.116425456635812,
+    "sortino_ratio": Infinity,
+    "calmar_ratio": 5.2072482582459445,
+    "total_trades": 13,
+    "win_rate_%": 92.3076923076923,
+    "profit_factor": 28.077510246030187
   },
   "cycle_analysis": {
     "dominant_period": 252.0,
