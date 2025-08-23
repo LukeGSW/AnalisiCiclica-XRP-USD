@@ -19,7 +19,7 @@ def get_ticker():
         return env_ticker.upper()
     
     # Default - CHANGE THIS TO YOUR DESIRED TICKER
-    return 'BTC-USD'  # ← CAMBIA QUESTO CON IL TUO TICKER
+    return 'XRP-USD'  # ← CAMBIA QUESTO CON IL TUO TICKER
 
 class Config:
     """Central configuration class for the trading system"""
