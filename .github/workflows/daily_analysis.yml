@@ -3,7 +3,7 @@ name: Daily Trading Analysis
 on:
   schedule:
     # Run every weekday at 4:30 PM EST (21:30 UTC) - after market close
-    - cron: '30 21 * * 1-5'
+    - cron: '30 21 * * 1-7'
   
   # Allow manual trigger
   workflow_dispatch:
