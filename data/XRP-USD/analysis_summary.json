@@ -1,18 +1,18 @@
 {
-  "timestamp": "2025-08-29T21:36:28.726098",
+  "timestamp": "2025-08-30T21:36:19.542175",
   "ticker": "XRP-USD",
-  "data_points": 3619,
+  "data_points": 3620,
   "latest_signal": {
-    "date": "2025-08-28",
+    "date": "2025-08-29",
     "signal": "HOLD",
     "position": "FLAT",
     "phase_quadrant": "Quadrante 4 (Discesa -> Minimo)",
-    "phase_value": 2.983236955425115,
-    "oscillator_value": -0.1454755234374998,
-    "signal_strength": 7.923000416072706,
+    "phase_value": 3.0299359892243434,
+    "oscillator_value": -0.13263291286999968,
+    "signal_strength": 7.216699641574647,
     "confidence": "LOW",
-    "price": 2.9670949736,
-    "timestamp": "2025-08-29T21:36:27.017584"
+    "price": 2.8219570414,
+    "timestamp": "2025-08-30T21:36:18.166734"
   },
   "backtest_metrics": {
     "total_return_%": 562.1064170727194,
