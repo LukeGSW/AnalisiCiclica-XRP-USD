@@ -1,28 +1,28 @@
 {
-  "timestamp": "2025-10-18T21:36:16.589088",
+  "timestamp": "2025-10-19T21:36:24.368477",
   "ticker": "XRP-USD",
-  "data_points": 3669,
+  "data_points": 3670,
   "latest_signal": {
-    "date": "2025-10-17",
+    "date": "2025-10-18",
     "signal": "BUY",
     "position": "LONG",
     "phase_quadrant": "Quadrante 1 (Minimo -> Salita)",
-    "phase_value": -2.6153723069850416,
-    "oscillator_value": -0.33394054639000004,
-    "signal_strength": 7.210867884413732,
+    "phase_value": -2.56935613471264,
+    "oscillator_value": -0.3707227044475001,
+    "signal_strength": 8.036625847999293,
     "confidence": "LOW",
-    "price": 2.2942390411,
-    "timestamp": "2025-10-18T21:36:14.292086"
+    "price": 2.3605099426,
+    "timestamp": "2025-10-19T21:36:22.642346"
   },
   "backtest_metrics": {
-    "total_return_%": 570.7721033927664,
+    "total_return_%": 571.0589415841569,
     "max_drawdown_%": 2.2179035981911452,
-    "sharpe_ratio": 0.7173318971605609,
-    "sortino_ratio": 3.337878573149704,
-    "calmar_ratio": 28.3895416486121,
+    "sharpe_ratio": 0.7174436398061083,
+    "sortino_ratio": 3.338398171769091,
+    "calmar_ratio": 28.393960972539666,
     "total_trades": 13,
     "win_rate_%": 84.61538461538461,
-    "profit_factor": 143.32657649987374
+    "profit_factor": 143.39777755334052
   },
   "cycle_analysis": {
     "dominant_period": 126.0,
