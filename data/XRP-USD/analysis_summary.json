@@ -1,28 +1,28 @@
 {
-  "timestamp": "2025-11-28T21:37:33.268109",
+  "timestamp": "2025-11-29T21:37:18.331254",
   "ticker": "XRP-USD",
-  "data_points": 3710,
+  "data_points": 3711,
   "latest_signal": {
-    "date": "2025-11-27",
+    "date": "2025-11-28",
     "signal": "HOLD",
     "position": "LONG",
     "phase_quadrant": "Quadrante 1 (Minimo -> Salita)",
-    "phase_value": -2.2158425851466226,
-    "oscillator_value": -0.2193020685825,
-    "signal_strength": 20.20535667115386,
+    "phase_value": -2.2106510198771723,
+    "oscillator_value": -0.21763563722249968,
+    "signal_strength": 20.34559292542927,
     "confidence": "LOW",
-    "price": 2.2008240553,
-    "timestamp": "2025-11-28T21:37:31.769013"
+    "price": 2.1806477042,
+    "timestamp": "2025-11-29T21:37:16.820461"
   },
   "backtest_metrics": {
-    "total_return_%": 523.0950162026721,
-    "max_drawdown_%": 3.0018417988177544,
-    "sharpe_ratio": 0.7271147023225034,
-    "sortino_ratio": 6.02162071665097,
-    "calmar_ratio": 19.47869341149163,
+    "total_return_%": 545.7573511086002,
+    "max_drawdown_%": 2.899549169583113,
+    "sharpe_ratio": 0.7124701308751206,
+    "sortino_ratio": 6.336688575741639,
+    "calmar_ratio": 20.942282246512136,
     "total_trades": 15,
     "win_rate_%": 66.66666666666666,
-    "profit_factor": 20.348884462059416
+    "profit_factor": 21.182366791734967
   },
   "cycle_analysis": {
     "dominant_period": 126.0,
