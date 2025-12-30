@@ -1,18 +1,18 @@
 {
-  "timestamp": "2025-12-29T21:40:25.888099",
+  "timestamp": "2025-12-30T21:40:52.328133",
   "ticker": "XRP-USD",
-  "data_points": 3741,
+  "data_points": 3742,
   "latest_signal": {
-    "date": "2025-12-28",
+    "date": "2025-12-29",
     "signal": "HOLD",
     "position": "LONG",
     "phase_quadrant": "Quadrante 1 (Minimo -> Salita)",
-    "phase_value": -2.0769434437747214,
-    "oscillator_value": -0.13464975700000004,
-    "signal_strength": 15.75416781719176,
+    "phase_value": -2.0896309042688963,
+    "oscillator_value": -0.13411924500500016,
+    "signal_strength": 15.4141193054873,
     "confidence": "LOW",
-    "price": 1.8643595335,
-    "timestamp": "2025-12-29T21:40:23.618586"
+    "price": 1.847723821,
+    "timestamp": "2025-12-30T21:40:41.222718"
   },
   "backtest_metrics": {
     "total_return_%": 498.17541986361357,
