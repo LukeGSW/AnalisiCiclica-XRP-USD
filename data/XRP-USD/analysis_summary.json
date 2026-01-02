@@ -1,28 +1,28 @@
 {
-  "timestamp": "2026-01-01T21:40:19.702744",
+  "timestamp": "2026-01-02T21:38:26.925701",
   "ticker": "XRP-USD",
-  "data_points": 3744,
+  "data_points": 3745,
   "latest_signal": {
-    "date": "2025-12-31",
+    "date": "2026-01-01",
     "signal": "HOLD",
     "position": "LONG",
     "phase_quadrant": "Quadrante 1 (Minimo -> Salita)",
-    "phase_value": -2.1180265640200746,
-    "oscillator_value": -0.14217036823250018,
-    "signal_strength": 15.824233809535414,
+    "phase_value": -2.1142276338320563,
+    "oscillator_value": -0.14285776209750023,
+    "signal_strength": 15.981871906249243,
     "confidence": "LOW",
-    "price": 1.8399733458,
-    "timestamp": "2026-01-01T21:40:18.110214"
+    "price": 1.8779364585,
+    "timestamp": "2026-01-02T21:38:25.319523"
   },
   "backtest_metrics": {
-    "total_return_%": 498.5501498826396,
+    "total_return_%": 500.44023050583934,
     "max_drawdown_%": 3.863790018377166,
-    "sharpe_ratio": 0.7368314251008304,
-    "sortino_ratio": 2.174809407333032,
-    "calmar_ratio": 14.429029151622883,
+    "sharpe_ratio": 0.7413545816995648,
+    "sortino_ratio": 2.169110721592061,
+    "calmar_ratio": 14.400113315772886,
     "total_trades": 14,
     "win_rate_%": 71.42857142857143,
-    "profit_factor": 28.055992530694656
+    "profit_factor": 28.157993112993626
   },
   "cycle_analysis": {
     "dominant_period": 126.0,
